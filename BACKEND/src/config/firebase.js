@@ -15,16 +15,36 @@ function initFirebase() {
   if (app) return { app, auth, db };
 
   let serviceAccount;
-  try {
-    const path = process.env.FIREBASE_SERVICE_ACCOUNT || join(__dirname, '..', '..', '..', 'serviceAccount.json');
-    console.log('Trying to load Firebase service account from:', path);
-    const fileContent = readFileSync(path, 'utf8');
-    serviceAccount = JSON.parse(fileContent);
-    console.log('Successfully loaded Firebase service account');
-  } catch (e) {
-    console.warn('Firebase service account not found. Error:', e.message);
+  
+  // Try 1: Check if FIREBASE_SERVICE_ACCOUNT env var contains the full JSON
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      console.log('Loading Firebase service account from FIREBASE_SERVICE_ACCOUNT environment variable');
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      console.log('✓ Successfully loaded Firebase service account from env variable');
+    } catch (e) {
+      console.warn('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT JSON:', e.message);
+    }
+  }
+  
+  // Try 2: Load from file (for local development)
+  if (!serviceAccount) {
+    try {
+      const path = join(__dirname, '..', '..', '..', 'serviceAccount.json');
+      console.log('Loading Firebase service account from file:', path);
+      const fileContent = readFileSync(path, 'utf8');
+      serviceAccount = JSON.parse(fileContent);
+      console.log('✓ Successfully loaded Firebase service account from file');
+    } catch (e) {
+      console.warn('❌ Firebase service account file not found:', e.message);
+    }
+  }
+  
+  // Try 3: Build from individual environment variables
+  if (!serviceAccount) {
+    console.log('Building Firebase service account from environment variables');
     serviceAccount = {
-      projectId: process.env.GOOGLE_CLOUD_PROJECT || 'mozambique-newhope',
+      projectId: process.env.FIREBASE_PROJECT_ID || 'mozambique-newhope',
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
     };
