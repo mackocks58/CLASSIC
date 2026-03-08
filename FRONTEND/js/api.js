@@ -1,9 +1,9 @@
 /**
  * API Client - Calls backend instead of Firebase directly
- * Requires Firebase Auth for token. Set window.API_BASE to override (default: http://localhost:3000)
+ * Requires Firebase Auth for token. Set window.API_BASE to override (default: Render backend)
  */
 (function() {
-  const API_BASE = (typeof window !== 'undefined' && window.API_BASE) || 'http://localhost:3000';
+  const API_BASE = (typeof window !== 'undefined' && window.API_BASE) || 'https://classic-1-f6k3.onrender.com';
 
   async function getToken() {
     const auth = typeof firebase !== 'undefined' && firebase.auth && firebase.auth();
