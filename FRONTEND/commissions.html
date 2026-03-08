@@ -1,0 +1,127 @@
+<!-- commissions.html -->
+<div class="page-card" style="padding: 20px;">
+    <h2 class="page-title" style="display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-percent" style="color: #0096c7;"></i> Commissions
+    </h2>
+
+    <!-- Total Commissions Box -->
+    <div style="background: white; border-radius: 30px; padding: 25px; text-align: center; margin-bottom: 25px; border: 2px solid #90e0ef; box-shadow: 0 8px 20px rgba(0,150,199,0.1);">
+        <h3 style="color: #023e8a; font-size: 1.2rem; margin-bottom: 10px;">Total Commissions</h3>
+        <div style="font-size: 3rem; font-weight: 800; color: #0096c7;" id="totalCommissions">0 BWP</div>
+    </div>
+
+    <!-- Commission Levels Grid (5 boxes) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px;">
+        <div class="commission-box" style="background: white; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid #90e0ef; box-shadow: 0 4px 10px #caf0f8; transition: 0.2s;">
+            <div style="font-size: 1rem; font-weight: 600; color: #023e8a; margin-bottom: 8px;">Level 1 (20%)</div>
+            <div style="font-size: 1.8rem; font-weight: 700; color: #0096c7;" id="level1Commissions">0 BWP</div>
+            <div style="font-size: 0.8rem; color: #2d6a9f; margin-top: 5px;" id="level1Count">Referrals: 0</div>
+        </div>
+        <div class="commission-box" style="background: white; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid #90e0ef; box-shadow: 0 4px 10px #caf0f8;">
+            <div style="font-size: 1rem; font-weight: 600; color: #023e8a; margin-bottom: 8px;">Level 2 (2%)</div>
+            <div style="font-size: 1.8rem; font-weight: 700; color: #0096c7;" id="level2Commissions">0 BWP</div>
+            <div style="font-size: 0.8rem; color: #2d6a9f; margin-top: 5px;" id="level2Count">Referrals: 0</div>
+        </div>
+        <div class="commission-box" style="background: white; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid #90e0ef; box-shadow: 0 4px 10px #caf0f8;">
+            <div style="font-size: 1rem; font-weight: 600; color: #023e8a; margin-bottom: 8px;">Level 3 (1%)</div>
+            <div style="font-size: 1.8rem; font-weight: 700; color: #0096c7;" id="level3Commissions">0 BWP</div>
+            <div style="font-size: 0.8rem; color: #2d6a9f; margin-top: 5px;" id="level3Count">Referrals: 0</div>
+        </div>
+        <div class="commission-box" style="background: white; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid #90e0ef; box-shadow: 0 4px 10px #caf0f8;">
+            <div style="font-size: 1rem; font-weight: 600; color: #023e8a; margin-bottom: 8px;">Level 4 (1%)</div>
+            <div style="font-size: 1.8rem; font-weight: 700; color: #0096c7;" id="level4Commissions">0 BWP</div>
+            <div style="font-size: 0.8rem; color: #2d6a9f; margin-top: 5px;" id="level4Count">Referrals: 0</div>
+        </div>
+        <div class="commission-box" style="background: white; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid #90e0ef; box-shadow: 0 4px 10px #caf0f8;">
+            <div style="font-size: 1rem; font-weight: 600; color: #023e8a; margin-bottom: 8px;">Level 5 (1%)</div>
+            <div style="font-size: 1.8rem; font-weight: 700; color: #0096c7;" id="level5Commissions">0 BWP</div>
+            <div style="font-size: 0.8rem; color: #2d6a9f; margin-top: 5px;" id="level5Count">Referrals: 0</div>
+        </div>
+    </div>
+
+    <!-- Commission History (optional, can be added later) -->
+    <div style="background: white; border-radius: 30px; padding: 20px; border: 1px solid #90e0ef;">
+        <h3 style="color: #023e8a; margin-bottom: 15px;"><i class="fas fa-history" style="color:#0096c7;"></i> Recent Commissions</h3>
+        <div id="commissionHistoryList" style="max-height: 300px; overflow-y: auto;">
+            <!-- History will be inserted here -->
+            <p style="color: #2d6a9f; text-align: center;">Loading history...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Wait for Firebase and auth to be ready (assumes parent page has initialized Firebase)
+        const checkAuth = setInterval(() => {
+            if (typeof firebase !== 'undefined' && firebase.auth().currentUser) {
+                clearInterval(checkAuth);
+                const user = firebase.auth().currentUser;
+                const userId = user.uid;
+                const database = firebase.database();
+
+                // Format amount
+                function formatAmount(amount) {
+                    if (!amount) return "0 BWP";
+                    return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " BWP";
+                }
+
+                // Load commission data
+                database.ref(`users/${userId}/commissions`).once('value').then(snapshot => {
+                    const commissions = snapshot.val() || {};
+                    
+                    document.getElementById('level1Commissions').textContent = formatAmount(commissions.level1);
+                    document.getElementById('level2Commissions').textContent = formatAmount(commissions.level2);
+                    document.getElementById('level3Commissions').textContent = formatAmount(commissions.level3);
+                    document.getElementById('level4Commissions').textContent = formatAmount(commissions.level4);
+                    document.getElementById('level5Commissions').textContent = formatAmount(commissions.level5);
+                    
+                    const total = (commissions.level1 || 0) + 
+                                  (commissions.level2 || 0) + 
+                                  (commissions.level3 || 0) + 
+                                  (commissions.level4 || 0) + 
+                                  (commissions.level5 || 0);
+                    
+                    document.getElementById('totalCommissions').textContent = formatAmount(total);
+                });
+
+                // Get referral counts
+                database.ref(`users/${userId}`).once('value').then(snapshot => {
+                    const userData = snapshot.val() || {};
+                    
+                    // Assuming referrals are stored under levels (adjust as needed)
+                    const level1Count = userData.level1 ? Object.keys(userData.level1).length : 0;
+                    const level2Count = userData.level2 ? Object.keys(userData.level2).length : 0;
+                    const level3Count = userData.level3 ? Object.keys(userData.level3).length : 0;
+                    const level4Count = userData.level4 ? Object.keys(userData.level4).length : 0;
+                    const level5Count = userData.level5 ? Object.keys(userData.level5).length : 0;
+                    
+                    document.getElementById('level1Count').textContent = `Referrals: ${level1Count}`;
+                    document.getElementById('level2Count').textContent = `Referrals: ${level2Count}`;
+                    document.getElementById('level3Count').textContent = `Referrals: ${level3Count}`;
+                    document.getElementById('level4Count').textContent = `Referrals: ${level4Count}`;
+                    document.getElementById('level5Count').textContent = `Referrals: ${level5Count}`;
+                });
+
+                // Load commission history (if you have a history node)
+                database.ref(`commissionHistory/${userId}`).orderByChild('timestamp').limitToLast(10).once('value', snap => {
+                    const historyDiv = document.getElementById('commissionHistoryList');
+                    if (!snap.exists()) {
+                        historyDiv.innerHTML = '<p style="color:#2d6a9f; text-align:center;">No commission history yet</p>';
+                        return;
+                    }
+                    let html = '';
+                    snap.forEach(child => {
+                        const h = child.val();
+                        const date = new Date(h.timestamp).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+                        html += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #caf0f8;">
+                            <span style="color:#023e8a;">${h.description || 'Commission'}</span>
+                            <span style="color:#0096c7; font-weight:600;">+${formatAmount(h.amount)}</span>
+                            <span style="color:#6c757d; font-size:0.8rem;">${date}</span>
+                        </div>`;
+                    });
+                    historyDiv.innerHTML = html;
+                });
+            }
+        }, 100);
+    })();
+</script>

@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuma SMS kwa Namba Yoyote | CLASSIC MAXIMIZE Admin</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #00d1b2;
+            --secondary: #3273dc;
+            --danger: #ff3860;
+            --warning: #ffdd57;
+            --dark: #363636;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .main-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .card-header {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 25px;
+        }
+        
+        .sms-form-container {
+            padding: 30px;
+        }
+        
+        .phone-input-group {
+            position: relative;
+        }
+        
+        .country-code {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .phone-input {
+            padding-left: 70px;
+        }
+        
+        .sms-counter {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .sms-counter .danger { color: var(--danger); }
+        .sms-counter .warning { color: var(--warning); }
+        
+        .progress-container {
+            margin-top: 10px;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 400px;
+            display: none;
+        }
+        
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .template-badge {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .template-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .logs-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .log-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .log-item:last-child {
+            border-bottom: none;
+        }
+        
+        .log-success {
+            border-left: 4px solid var(--primary);
+        }
+        
+        .log-failed {
+            border-left: 4px solid var(--danger);
+        }
+        
+        .bulk-input {
+            font-size: 14px;
+            height: 120px;
+        }
+        
+        .bulk-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 10px;
+            }
+            
+            .sms-form-container {
+                padding: 20px;
+            }
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .stats-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <!-- Back to Admin Dashboard -->
+    <a href="admin-sms.html" class="btn btn-light back-btn" id="backBtn">
+        <i class="fas fa-arrow-left"></i> Rudi kwenye Dashboard
+    </a>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader"></div>
+        <div class="text-white mt-3" id="loadingText">Inatumia SMS...</div>
+    </div>
+
+    <!-- Success Notification -->
+    <div class="notification" id="successNotification">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-check-circle me-2"></i>
+                <div>
+                    <h6 class="alert-heading mb-1">Imefanikiwa!</h6>
+                    <div id="successMessage"></div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" onclick="hideNotification('successNotification')"></button>
+        </div>
+    </div>
+
+    <!-- Error Notification -->
+    <div class="notification" id="errorNotification">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-times-circle me-2"></i>
+                <div>
+                    <h6 class="alert-heading mb-1">Hitilafu!</h6>
+                    <div id="errorMessage"></div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" onclick="hideNotification('errorNotification')"></button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="admin-container">
+        <!-- Stats Row -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="text-muted small">
+                        <i class="fas fa-paper-plane text-primary me-1"></i> SMS Leo
+                    </div>
+                    <div class="stats-value text-primary" id="todayCount">0</div>
+                    <div class="small text-muted">Zilizotumwa leo</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card" style="border-left-color: var(--secondary);">
+                    <div class="text-muted small">
+                        <i class="fas fa-check-circle text-success me-1"></i> Zilizofanikiwa
+                    </div>
+                    <div class="stats-value text-success" id="successCount">0</div>
+                    <div class="small text-muted">Zilizofika leo</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card" style="border-left-color: var(--danger);">
+                    <div class="text-muted small">
+                        <i class="fas fa-times-circle text-danger me-1"></i> Zilizoshindwa
+                    </div>
+                    <div class="stats-value text-danger" id="failedCount">0</div>
+                    <div class="small text-muted">Zisizofika leo</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="main-card">
+            <div class="card-header text-center">
+                <h1 class="h3 mb-2">
+                    <i class="fas fa-mobile-alt me-2"></i> Tuma SMS kwa Namba Yoyote
+                </h1>
+                <p class="mb-0 opacity-75">Tuma ujumbe kwa mtu yeyote nje ya mfumo wetu</p>
+            </div>
+
+            <div class="sms-form-container">
+                <!-- Tabs for Single/Bulk SMS -->
+                <ul class="nav nav-tabs mb-4" id="smsTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="single-tab" data-bs-toggle="tab" 
+                                data-bs-target="#single" type="button">
+                            <i class="fas fa-user me-1"></i> Namba Moja
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="bulk-tab" data-bs-toggle="tab" 
+                                data-bs-target="#bulk" type="button">
+                            <i class="fas fa-users me-1"></i> Namba Nyingi
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="smsTabsContent">
+                    <!-- Single SMS Tab -->
+                    <div class="tab-pane fade show active" id="single" role="tabpanel">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-phone me-1"></i> Namba ya Simu
+                            </label>
+                            <div class="phone-input-group">
+                                <span class="country-code">+255</span>
+                                <input type="tel" class="form-control form-control-lg phone-input" 
+                                       id="singlePhone" placeholder="XXX XXX XXX" maxlength="9">
+                            </div>
+                            <div class="form-text">
+                                Ingiza namba ya simu bila +255 (mfano: 712345678)
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-user me-1"></i> Jina la Mteja (Si Lazima)
+                            </label>
+                            <input type="text" class="form-control" id="customerName" 
+                                   placeholder="Jina la mteja (kwa ajili ya personalization)">
+                        </div>
+                    </div>
+
+                    <!-- Bulk SMS Tab -->
+                    <div class="tab-pane fade" id="bulk" role="tabpanel">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-users me-1"></i> Namba za Simu
+                            </label>
+                            <textarea class="form-control bulk-input" id="bulkPhones" 
+                                      placeholder="Weka namba za simu, kila namba kwenye mstari wake (bila +255)&#10;Mfano:&#10;712345678&#10;754321098&#10;783456789"></textarea>
+                            <div class="bulk-info">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Weka namba 1 kwa kila mstari. SMS zitatumwa kwa namba zote hapo juu.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-tag me-1"></i> Kichwa cha Ujumbe (Si Lazima)
+                            </label>
+                            <input type="text" class="form-control" id="bulkTag" 
+                                   placeholder="Mfano: Promoshoni ya Januari, Kumbusho, n.k">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SMS Message -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-edit me-1"></i> Ujumbe wa SMS
+                    </label>
+                    <textarea class="form-control" id="smsMessage" rows="4" 
+                              placeholder="Andika ujumbe wa SMS hapa... (Kiwango cha juu ni 160 herufi kwa SMS moja)"
+                              maxlength="480"></textarea>
+                    
+                    <div class="sms-counter mt-2">
+                        <span id="charCount">0/160 herufi</span>
+                        <span id="smsSegments">SMS: 1</span>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                </div>
+
+                <!-- SMS Templates -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-copy me-1"></i> Miundo ya SMS (Templates)
+                    </label>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-primary template-badge" data-template="promotion">
+                            <i class="fas fa-bullhorn me-1"></i> Promoshoni
+                        </span>
+                        <span class="badge bg-success template-badge" data-template="welcome">
+                            <i class="fas fa-hand-wave me-1"></i> Karibu
+                        </span>
+                        <span class="badge bg-info template-badge" data-template="update">
+                            <i class="fas fa-sync me-1"></i> Mabadiliko
+                        </span>
+                        <span class="badge bg-warning template-badge" data-template="reminder">
+                            <i class="fas fa-bell me-1"></i> Kumbusho
+                        </span>
+                        <span class="badge bg-danger template-badge" data-template="urgent">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Harusi
+                        </span>
+                        <span class="badge bg-secondary template-badge" data-template="custom">
+                            <i class="fas fa-star me-1"></i> Mteja Bora
+                        </span>
+                    </div>
+                    
+                    <!-- Custom Templates -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="templateName" 
+                                       placeholder="Jina la muundo wako">
+                                <button class="btn btn-outline-primary" type="button" id="saveTemplateBtn">
+                                    <i class="fas fa-save"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <select class="form-select" id="savedTemplates">
+                                <option value="">Chagua muundo uliohifadhiwa</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex flex-wrap gap-3 mb-4">
+                    <button class="btn btn-primary btn-lg" id="sendSmsBtn">
+                        <i class="fas fa-paper-plane me-2"></i> Tuma SMS
+                    </button>
+                    <button class="btn btn-warning btn-lg" id="testSmsBtn">
+                        <i class="fas fa-vial me-2"></i> Jaribu SMS
+                    </button>
+                    <button class="btn btn-secondary" id="clearBtn">
+                        <i class="fas fa-broom me-2"></i> Safisha
+                    </button>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="alert alert-info">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="h5 mb-1" id="totalSent">0</div>
+                            <div class="small">Jumla SMS</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h5 mb-1 text-success" id="totalSuccess">0</div>
+                            <div class="small">Zilizofanikiwa</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h5 mb-1 text-danger" id="totalFailed">0</div>
+                            <div class="small">Zilizoshindwa</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SMS Logs -->
+        <div class="main-card">
+            <div class="card-header">
+                <h3 class="h5 mb-0">
+                    <i class="fas fa-history me-2"></i> Historia ya SMS
+                </h3>
+                <p class="mb-0 opacity-75">Orodha ya SMS zilizotumwa nje ya mfumo</p>
+            </div>
+            
+            <div class="p-4">
+                <div class="mb-3">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="filterDate">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterStatus">
+                                <option value="">Hali Zote</option>
+                                <option value="sent">Zilizofanikiwa</option>
+                                <option value="failed">Zilizoshindwa</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchLogs" 
+                                       placeholder="Tafuta kwa namba ya simu...">
+                                <button class="btn btn-outline-secondary" type="button" id="refreshLogsBtn">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="logs-container" id="logsContainer">
+                    <!-- Logs will be loaded here -->
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Hakuna SMS zilizotumwa bado</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // SMS Templates
+        const templates = {
+            promotion: "Habari {{name}}, Tuna fursa mpya ya uwekezaji! Pata faida hadi 30% kwa muda mfupi. Wasiliana nasi kupitia 0755000000 kwa maelezo zaidi.",
+            welcome: "Habari {{name}}, Karibu kwenye CLASSIC MAXIMIZE! Tunafurahi kuwa nawe. Kwa maelezo zaidi juu ya huduma zetu, wasiliana nasi.",
+            update: "Habari {{name}}, Kuna mabadiliko mapya kwenye mfumo wa CLASSIC MAXIMIZE. Furahia huduma bora zaidi. Tupigie kwa 0755000000.",
+            reminder: "Habari {{name}}, Ukumbusho: Fursa ya uwekezaji inakaribia kufungwa. Jisajili sasa upate faida kubwa.",
+            urgent: "Habari {{name}}, Ujumbe wa HARUSI! Tafadhali wasiliana nasi upate taarifa muhimu. CLASSIC MAXIMIZE - 0755000000",
+            custom: "Habari {{name}}, Kama mteja wetu bora, tunakupa fursa ya kipekee ya uwekezaji. Wasiliana nasi sasa!"
+        };
+
+        // Beem Africa SMS API Configuration
+        const BEEM_API_KEY = 'aac029076075c64b';
+        const BEEM_SECRET_KEY = 'MTQ1M2UzYjk0MzNjNGFkZjlhOGFlMjUzNzYyY2NkNjA5OTJlOGQ5N2RiY2M2MzFjZWQ4ZWEyZjhlNWM1MTAxYQ==';
+        const BEEM_SENDER_ID = 'CLASSIC MAXIMIZE';
+        const BEEM_API_URL = 'https://apisms.beem.africa/v1/send';
+
+        // Global variables
+        let smsLogs = [];
+        let todayStats = { total: 0, success: 0, failed: 0 };
+        let isSending = false;
+
+        // DOM Elements
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const successNotification = document.getElementById('successNotification');
+        const errorNotification = document.getElementById('errorNotification');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const smsMessage = document.getElementById('smsMessage');
+        const charCount = document.getElementById('charCount');
+        const smsSegments = document.getElementById('smsSegments');
+        const progressBar = document.getElementById('progressBar');
+        const logsContainer = document.getElementById('logsContainer');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            // Load saved templates
+            loadSavedTemplates();
+            
+            // Load logs from localStorage
+            loadSmsLogs();
+            
+            // Load today's stats
+            loadTodayStats();
+            
+            // Initialize event listeners
+            initializeEventListeners();
+        }
+
+        function initializeEventListeners() {
+            // SMS message input
+            smsMessage.addEventListener('input', updateSmsInfo);
+            
+            // Send SMS button
+            document.getElementById('sendSmsBtn').addEventListener('click', sendSms);
+            
+            // Test SMS button
+            document.getElementById('testSmsBtn').addEventListener('click', sendTestSms);
+            
+            // Clear button
+            document.getElementById('clearBtn').addEventListener('click', clearForm);
+            
+            // Template badges
+            document.querySelectorAll('.template-badge').forEach(badge => {
+                badge.addEventListener('click', function() {
+                    const template = this.getAttribute('data-template');
+                    loadTemplate(template);
+                });
+            });
+            
+            // Save template button
+            document.getElementById('saveTemplateBtn').addEventListener('click', saveTemplate);
+            
+            // Load saved template
+            document.getElementById('savedTemplates').addEventListener('change', function() {
+                if (this.value) {
+                    loadSavedTemplate(this.value);
+                }
+            });
+            
+            // Filter logs
+            document.getElementById('filterDate').addEventListener('change', filterLogs);
+            document.getElementById('filterStatus').addEventListener('change', filterLogs);
+            document.getElementById('searchLogs').addEventListener('input', filterLogs);
+            document.getElementById('refreshLogsBtn').addEventListener('click', loadSmsLogs);
+            
+            // Phone number input formatting
+            document.getElementById('singlePhone').addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 9) value = value.substring(0, 9);
+                
+                // Format as XXX XXX XXX
+                if (value.length > 6) {
+                    value = value.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3');
+                } else if (value.length > 3) {
+                    value = value.replace(/(\d{3})(\d{3})/, '$1 $2');
+                }
+                
+                e.target.value = value;
+            });
+            
+            // Auto-save message draft
+            let saveTimeout;
+            smsMessage.addEventListener('input', function() {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    localStorage.setItem('smsDraft', this.value);
+                }, 1000);
+            });
+            
+            // Load draft if exists
+            const draft = localStorage.getItem('smsDraft');
+            if (draft) {
+                smsMessage.value = draft;
+                updateSmsInfo();
+            }
+            
+            // Set today's date in filter
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filterDate').value = today;
+        }
+
+        // Function to format phone number
+        function formatPhoneNumber(phone) {
+            if (!phone) return '';
+            
+            // Remove all non-digits
+            let cleaned = phone.toString().replace(/\D/g, '');
+            
+            // If it starts with 0, replace with 255
+            if (cleaned.startsWith('0')) {
+                cleaned = '255' + cleaned.substring(1);
+            }
+            // If it doesn't start with 255, add it
+            else if (!cleaned.startsWith('255')) {
+                cleaned = '255' + cleaned;
+            }
+            
+            return cleaned;
+        }
+
+        // Function to validate phone number
+        function isValidPhoneNumber(phone) {
+            const cleaned = phone.replace(/\D/g, '');
+            
+            // Check if it's 9 digits (without 255) or 12 digits (with 255)
+            if (cleaned.length === 9) {
+                // Check if it starts with valid Tanzanian prefix
+                const validPrefixes = ['74', '75', '76', '77', '78', '79', '65', '67', '68'];
+                const prefix = cleaned.substring(0, 2);
+                return validPrefixes.includes(prefix);
+            } else if (cleaned.length === 12 && cleaned.startsWith('255')) {
+                const suffix = cleaned.substring(3, 5);
+                const validSuffixes = ['74', '75', '76', '77', '78', '79', '65', '67', '68'];
+                return validSuffixes.includes(suffix);
+            }
+            
+            return false;
+        }
+
+        // Function to show loading
+        function showLoading(text = 'Inatumia SMS...') {
+            loadingText.textContent = text;
+            loadingOverlay.style.display = 'flex';
+        }
+
+        // Function to hide loading
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        // Function to show notification
+        function showNotification(type, title, message) {
+            if (type === 'success') {
+                successMessage.innerHTML = `
+                    <div class="small">${title}</div>
+                    <div>${message}</div>
+                `;
+                successNotification.classList.add('show');
+                
+                setTimeout(() => {
+                    hideNotification('successNotification');
+                }, 5000);
+            } else {
+                errorMessage.innerHTML = `
+                    <div class="small">${title}</div>
+                    <div>${message}</div>
+                `;
+                errorNotification.classList.add('show');
+                
+                setTimeout(() => {
+                    hideNotification('errorNotification');
+                }, 5000);
+            }
+        }
+
+        // Function to hide notification
+        function hideNotification(notificationId) {
+            document.getElementById(notificationId).classList.remove('show');
+        }
+
+        // Function to update SMS info
+        function updateSmsInfo() {
+            const message = smsMessage.value;
+            const charLength = message.length;
+            
+            // Update character count
+            charCount.textContent = `${charLength}/160 herufi`;
+            if (charLength > 140) {
+                charCount.className = 'danger';
+            } else if (charLength > 120) {
+                charCount.className = 'warning';
+            } else {
+                charCount.className = '';
+            }
+            
+            // Update progress bar
+            const progress = Math.min((charLength / 160) * 100, 100);
+            progressBar.style.width = `${progress}%`;
+            progressBar.style.background = progress > 87.5 ? 'var(--danger)' : 
+                                          progress > 75 ? 'var(--warning)' : 'var(--primary)';
+            
+            // Calculate SMS segments
+            const segments = Math.ceil(charLength / 160);
+            smsSegments.textContent = `SMS: ${segments}`;
+        }
+
+        // Function to load template
+        function loadTemplate(templateName) {
+            if (templates[templateName]) {
+                smsMessage.value = templates[templateName];
+                updateSmsInfo();
+                showNotification('success', 'Muundo Umeingizwa', 
+                    `Muundo wa "${templateName}" umeingizwa kwenye ujumbe`);
+            }
+        }
+
+        // Function to load saved templates
+        function loadSavedTemplates() {
+            const savedTemplates = JSON.parse(localStorage.getItem('customTemplates')) || {};
+            const select = document.getElementById('savedTemplates');
+            
+            // Clear options except first
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // Add saved templates
+            Object.keys(savedTemplates).forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                select.appendChild(option);
+            });
+        }
+
+        // Function to save template
+        function saveTemplate() {
+            const nameInput = document.getElementById('templateName');
+            const name = nameInput.value.trim();
+            const message = smsMessage.value.trim();
+            
+            if (!name) {
+                showNotification('error', 'Hitilafu', 'Tafadhali ingiza jina la muundo');
+                nameInput.focus();
+                return;
+            }
+            
+            if (!message) {
+                showNotification('error', 'Hitilafu', 'Hakuna ujumbe wa kuhifadhi');
+                return;
+            }
+            
+            // Load existing templates
+            const savedTemplates = JSON.parse(localStorage.getItem('customTemplates')) || {};
+            
+            // Add new template
+            savedTemplates[name] = message;
+            
+            // Save to localStorage
+            localStorage.setItem('customTemplates', JSON.stringify(savedTemplates));
+            
+            // Reload templates dropdown
+            loadSavedTemplates();
+            
+            // Clear input
+            nameInput.value = '';
+            
+            showNotification('success', 'Imefanikiwa', 
+                `Muundo "${name}" umehifadhiwa kikamilifu`);
+        }
+
+        // Function to load saved template
+        function loadSavedTemplate(templateName) {
+            const savedTemplates = JSON.parse(localStorage.getItem('customTemplates')) || {};
+            
+            if (savedTemplates[templateName]) {
+                smsMessage.value = savedTemplates[templateName];
+                updateSmsInfo();
+                showNotification('success', 'Muundo Umeongezwa', 
+                    `Muundo "${templateName}" umeongezwa kwenye ujumbe`);
+            }
+        }
+
+        // Function to clear form
+        function clearForm() {
+            // Get active tab
+            const activeTab = document.querySelector('#smsTabs .nav-link.active').id;
+            
+            if (activeTab === 'single-tab') {
+                document.getElementById('singlePhone').value = '';
+                document.getElementById('customerName').value = '';
+            } else {
+                document.getElementById('bulkPhones').value = '';
+                document.getElementById('bulkTag').value = '';
+            }
+            
+            smsMessage.value = '';
+            updateSmsInfo();
+            
+            showNotification('success', 'Fomu Imesafishwa', 
+                'Maelezo yote yamefutwa, unaweza kuanza tena');
+        }
+
+        // Function to send SMS using Beem API
+        async function sendSMS(phoneNumber, message, recipientName = '') {
+            try {
+                const formattedPhone = formatPhoneNumber(phoneNumber);
+                
+                if (!formattedPhone || formattedPhone.length < 12) {
+                    return { success: false, error: 'Namba ya simu si sahihi' };
+                }
+                
+                // Prepare message
+                let finalMessage = message;
+                if (recipientName) {
+                    finalMessage = message.replace(/{{name}}/g, recipientName);
+                }
+                
+                // Prepare request
+                const requestBody = {
+                    source_addr: BEEM_SENDER_ID,
+                    schedule_time: '',
+                    encoding: 0,
+                    message: finalMessage,
+                    recipients: [
+                        {
+                            recipient_id: 1,
+                            dest_addr: formattedPhone
+                        }
+                    ]
+                };
+                
+                // Encode credentials for Basic Auth
+                const credentials = btoa(`${BEEM_API_KEY}:${BEEM_SECRET_KEY}`);
+                
+                // Send with timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                
+                const response = await fetch(BEEM_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Basic ${credentials}`,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    return { 
+                        success: false, 
+                        error: `HTTP ${response.status}: ${errorText}` 
+                    };
+                }
+                
+                const result = await response.json();
+                return { success: true, data: result };
+                
+            } catch (error) {
+                console.error('SMS sending error:', error);
+                return { 
+                    success: false, 
+                    error: error.name === 'AbortError' ? 'Muda wa kutuma umekwisha' : error.message 
+                };
+            }
+        }
+
+        // Function to send SMS
+        async function sendSms() {
+            const message = smsMessage.value.trim();
+            
+            if (!message) {
+                showNotification('error', 'Hitilafu', 'Tafadhali andika ujumbe wa SMS');
+                return;
+            }
+            
+            // Get active tab
+            const activeTab = document.querySelector('#smsTabs .nav-link.active').id;
+            
+            if (activeTab === 'single-tab') {
+                // Single SMS
+                const phone = document.getElementById('singlePhone').value.replace(/\s/g, '');
+                const name = document.getElementById('customerName').value.trim();
+                
+                if (!phone) {
+                    showNotification('error', 'Hitilafu', 'Tafadhali ingiza namba ya simu');
+                    return;
+                }
+                
+                if (!isValidPhoneNumber(phone)) {
+                    showNotification('error', 'Hitilafu', 
+                        'Namba ya simu si sahihi. Hakikisha umeingiza namba sahihi ya Tanzania');
+                    return;
+                }
+                
+                if (!confirm(`Unataka kutuma SMS kwa +255${phone}?`)) {
+                    return;
+                }
+                
+                showLoading(`Inatumia SMS kwa +255${phone}...`);
+                isSending = true;
+                
+                try {
+                    const result = await sendSMS(phone, message, name || 'Mteja');
+                    
+                    // Save log
+                    const log = {
+                        id: Date.now(),
+                        phone: `+255${phone}`,
+                        name: name || 'Mteja',
+                        message: message,
+                        status: result.success ? 'sent' : 'failed',
+                        error: result.error || null,
+                        timestamp: new Date().toISOString(),
+                        type: 'single'
+                    };
+                    
+                    saveSmsLog(log);
+                    
+                    if (result.success) {
+                        // Update stats
+                        todayStats.total++;
+                        todayStats.success++;
+                        updateStatsDisplay();
+                        saveTodayStats();
+                        
+                        showNotification('success', 'Imefanikiwa',
+                            `SMS imetumwa kwa mafanikio kwa +255${phone}`);
+                        
+                        // Clear phone field for next SMS
+                        document.getElementById('singlePhone').value = '';
+                    } else {
+                        // Update failed stats
+                        todayStats.total++;
+                        todayStats.failed++;
+                        updateStatsDisplay();
+                        saveTodayStats();
+                        
+                        showNotification('error', 'Imeshindwa',
+                            `SMS haikutumwa kwa +255${phone}: ${result.error}`);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error sending SMS:', error);
+                    showNotification('error', 'Hitilafu', 
+                        'Hitilafu katika kutuma SMS: ' + error.message);
+                } finally {
+                    hideLoading();
+                    isSending = false;
+                }
+                
+            } else {
+                // Bulk SMS
+                const phonesText = document.getElementById('bulkPhones').value.trim();
+                const tag = document.getElementById('bulkTag').value.trim();
+                
+                if (!phonesText) {
+                    showNotification('error', 'Hitilafu', 'Tafadhali ingiza namba za simu');
+                    return;
+                }
+                
+                // Parse phone numbers
+                const phoneLines = phonesText.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0);
+                
+                if (phoneLines.length === 0) {
+                    showNotification('error', 'Hitilafu', 'Hakuna namba za simu zilizoingizwa');
+                    return;
+                }
+                
+                // Validate phone numbers
+                const invalidPhones = [];
+                const validPhones = [];
+                
+                phoneLines.forEach(phone => {
+                    if (isValidPhoneNumber(phone)) {
+                        validPhones.push(phone);
+                    } else {
+                        invalidPhones.push(phone);
+                    }
+                });
+                
+                if (invalidPhones.length > 0) {
+                    showNotification('error', 'Hitilafu', 
+                        `Namba ${invalidPhones.length} si sahihi. Hakikisha namba zote ni za Tanzania`);
+                    return;
+                }
+                
+                if (validPhones.length === 0) {
+                    showNotification('error', 'Hitilafu', 'Hakuna namba sahihi za simu');
+                    return;
+                }
+                
+                if (!confirm(`Unataka kutuma SMS kwa watu ${validPhones.length}?\nGharama: SMS ${Math.ceil(message.length/160)} × ${validPhones.length} = ${Math.ceil(message.length/160) * validPhones.length}`)) {
+                    return;
+                }
+                
+                showLoading(`Inatumia SMS (0/${validPhones.length})...`);
+                isSending = true;
+                
+                let successCount = 0;
+                let failedCount = 0;
+                
+                try {
+                    for (let i = 0; i < validPhones.length; i++) {
+                        const phone = validPhones[i];
+                        
+                        loadingText.textContent = 
+                            `Inatumia SMS (${i + 1}/${validPhones.length})...`;
+                        
+                        const result = await sendSMS(phone, message, 'Mteja');
+                        
+                        // Save log with tag
+                        const log = {
+                            id: Date.now() + i,
+                            phone: `+255${phone.replace(/\D/g, '').slice(-9)}`,
+                            name: tag || 'Mteja',
+                            message: message,
+                            status: result.success ? 'sent' : 'failed',
+                            error: result.error || null,
+                            timestamp: new Date().toISOString(),
+                            type: 'bulk',
+                            tag: tag || null
+                        };
+                        
+                        saveSmsLog(log);
+                        
+                        if (result.success) {
+                            successCount++;
+                        } else {
+                            failedCount++;
+                        }
+                        
+                        // Small delay to avoid rate limiting
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                    }
+                    
+                    // Update stats
+                    todayStats.total += successCount + failedCount;
+                    todayStats.success += successCount;
+                    todayStats.failed += failedCount;
+                    
+                    updateStatsDisplay();
+                    saveTodayStats();
+                    
+                    showNotification('success', 'Ujumbe Umetumwa',
+                        `Zilizofanikiwa: ${successCount}, Zilizoshindwa: ${failedCount}\n` +
+                        `Jumla: ${validPhones.length} watu`);
+                    
+                    // Clear bulk phones for next batch
+                    document.getElementById('bulkPhones').value = '';
+                    
+                } catch (error) {
+                    console.error('Error in bulk SMS:', error);
+                    showNotification('error', 'Hitilafu', 
+                        'Hitilafu katika kutuma SMS nyingi: ' + error.message);
+                } finally {
+                    hideLoading();
+                    isSending = false;
+                }
+            }
+        }
+
+        // Function to send test SMS
+        async function sendTestSms() {
+            const message = smsMessage.value.trim();
+            
+            if (!message) {
+                showNotification('error', 'Hitilafu', 'Andika ujumbe wa SMS kwanza');
+                return;
+            }
+            
+            // Use admin's phone or ask for test number
+            const testPhone = prompt('Ingiza namba ya simu ya majaribio (bila +255):', '755000000');
+            
+            if (!testPhone) return;
+            
+            if (!isValidPhoneNumber(testPhone)) {
+                showNotification('error', 'Hitilafu', 
+                    'Namba ya simu si sahihi. Hakikisha umeingiza namba sahihi ya Tanzania');
+                return;
+            }
+            
+            showLoading(`Inatumia SMS ya majaribio...`);
+            
+            try {
+                const result = await sendSMS(testPhone, message, 'Mteja wa Majaribio');
+                
+                if (result.success) {
+                    showNotification('success', 'Majaribio Imefanikiwa',
+                        `SMS ya majaribio imetumwa kwa +255${testPhone}`);
+                } else {
+                    showNotification('error', 'Majaribio Imeshindwa',
+                        `SMS haikutumwa: ${result.error}`);
+                }
+                
+            } catch (error) {
+                console.error('Error sending test SMS:', error);
+                showNotification('error', 'Hitilafu', 
+                    'Hitilafu katika kutuma SMS ya majaribio: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to save SMS log
+        function saveSmsLog(log) {
+            // Load existing logs
+            const logs = JSON.parse(localStorage.getItem('externalSmsLogs')) || [];
+            
+            // Add new log
+            logs.unshift(log); // Add to beginning
+            
+            // Keep only last 1000 logs
+            if (logs.length > 1000) {
+                logs.length = 1000;
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('externalSmsLogs', JSON.stringify(logs));
+            
+            // Reload logs display
+            loadSmsLogs();
+        }
+
+        // Function to load SMS logs
+        function loadSmsLogs() {
+            const logs = JSON.parse(localStorage.getItem('externalSmsLogs')) || [];
+            smsLogs = logs;
+            
+            // Update total stats
+            const totalSent = logs.length;
+            const totalSuccess = logs.filter(log => log.status === 'sent').length;
+            const totalFailed = logs.filter(log => log.status === 'failed').length;
+            
+            document.getElementById('totalSent').textContent = totalSent;
+            document.getElementById('totalSuccess').textContent = totalSuccess;
+            document.getElementById('totalFailed').textContent = totalFailed;
+            
+            // Filter logs
+            filterLogs();
+        }
+
+        // Function to filter logs
+        function filterLogs() {
+            const dateFilter = document.getElementById('filterDate').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            const searchFilter = document.getElementById('searchLogs').value.toLowerCase();
+            
+            let filteredLogs = smsLogs;
+            
+            // Apply date filter
+            if (dateFilter) {
+                filteredLogs = filteredLogs.filter(log => {
+                    const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+                    return logDate === dateFilter;
+                });
+            }
+            
+            // Apply status filter
+            if (statusFilter) {
+                filteredLogs = filteredLogs.filter(log => log.status === statusFilter);
+            }
+            
+            // Apply search filter
+            if (searchFilter) {
+                filteredLogs = filteredLogs.filter(log => 
+                    log.phone.includes(searchFilter) || 
+                    (log.name && log.name.toLowerCase().includes(searchFilter))
+                );
+            }
+            
+            displayLogs(filteredLogs);
+        }
+
+        // Function to display logs
+        function displayLogs(logs) {
+            if (logs.length === 0) {
+                logsContainer.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Hakuna SMS zilizopatikana</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            logs.forEach(log => {
+                const date = new Date(log.timestamp);
+                const timeString = date.toLocaleTimeString('sw-TZ', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                const dateString = date.toLocaleDateString('sw-TZ');
+                
+                html += `
+                    <div class="log-item ${log.status === 'sent' ? 'log-success' : 'log-failed'}">
+                        <div style="flex: 1;">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>${log.phone}</strong>
+                                    ${log.name && log.name !== 'Mteja' ? `<span class="badge bg-secondary ms-2">${log.name}</span>` : ''}
+                                    ${log.tag ? `<span class="badge bg-info ms-1">${log.tag}</span>` : ''}
+                                    <span class="badge ${log.type === 'bulk' ? 'bg-warning' : 'bg-primary'} ms-1">
+                                        ${log.type === 'bulk' ? 'Nyingi' : 'Moja'}
+                                    </span>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">${dateString} ${timeString}</small>
+                                    <span class="badge ${log.status === 'sent' ? 'bg-success' : 'bg-danger'} ms-2">
+                                        ${log.status === 'sent' ? 'Imefanikiwa' : 'Imeshindwa'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mt-2 text-muted" style="font-size: 13px;">
+                                ${log.message.length > 100 ? log.message.substring(0, 100) + '...' : log.message}
+                            </div>
+                            ${log.error ? `
+                                <div class="mt-1">
+                                    <small class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>${log.error}</small>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            logsContainer.innerHTML = html;
+        }
+
+        // Function to load today's stats
+        function loadTodayStats() {
+            const today = new Date().toISOString().split('T')[0];
+            const savedStats = JSON.parse(localStorage.getItem('externalSmsStats')) || {};
+            
+            if (savedStats[today]) {
+                todayStats = savedStats[today];
+            } else {
+                todayStats = { total: 0, success: 0, failed: 0 };
+            }
+            
+            updateStatsDisplay();
+        }
+
+        // Function to save today's stats
+        function saveTodayStats() {
+            const today = new Date().toISOString().split('T')[0];
+            const savedStats = JSON.parse(localStorage.getItem('externalSmsStats')) || {};
+            
+            savedStats[today] = todayStats;
+            localStorage.setItem('externalSmsStats', JSON.stringify(savedStats));
+        }
+
+        // Function to update stats display
+        function updateStatsDisplay() {
+            document.getElementById('todayCount').textContent = todayStats.total;
+            document.getElementById('successCount').textContent = todayStats.success;
+            document.getElementById('failedCount').textContent = todayStats.failed;
+        }
+
+        // Auto-refresh stats every 30 seconds
+        setInterval(() => {
+            if (!isSending) {
+                loadTodayStats();
+                loadSmsLogs();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "supportChats": {
+      "$userId": {
+        ".read": "auth != null && (auth.uid == $userId || root.child('admins').child(auth.uid).exists())",
+        ".write": "auth != null",
+        "messages": {
+          ".indexOn": ["timestamp"]
+        }
+      },
+      ".indexOn": ["updatedAt"]
+    }
+  }
+}

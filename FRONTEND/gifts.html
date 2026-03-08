@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Tasks - Earn Gift Points</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #000000;
+            --secondary: #00ff88;
+            --accent: #ffd700;
+            --dark: #0f0f1a;
+            --light: #f0f0ff;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff0055;
+            --card-bg: rgba(255, 255, 255, 0.05);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #000428, #004e92);
+            color: var(--light);
+            min-height: 100vh;
+            background-attachment: fixed;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header Styles */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 40px;
+            color: var(--secondary);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .logo-text h1 {
+            background: linear-gradient(45deg, var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 28px;
+        }
+        
+        .logo-text p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+        
+        /* User Points Card */
+        .points-card {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(255, 215, 0, 0.1));
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            min-width: 280px;
+            border: 2px solid var(--secondary);
+            box-shadow: 0 10px 20px rgba(0, 255, 136, 0.2);
+            transition: transform 0.3s;
+        }
+        
+        .points-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .points-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 10px;
+        }
+        
+        .points-amount {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--secondary);
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            margin-bottom: 15px;
+        }
+        
+        .points-icon {
+            font-size: 30px;
+            color: var(--accent);
+            margin-right: 10px;
+        }
+        
+        .convert-btn {
+            background: linear-gradient(45deg, var(--secondary), #00cc70);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 0 auto;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+        
+        .convert-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 255, 136, 0.4);
+        }
+        
+        /* Instructions Section */
+        .instructions {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 255, 136, 0.1);
+        }
+        
+        .instructions h2 {
+            color: var(--secondary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 24px;
+        }
+        
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .rule-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .rule-card h3 {
+            color: var(--accent);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .rule-card p {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+        
+        /* Tasks Container */
+        .tasks-container {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(0, 255, 136, 0.1);
+        }
+        
+        .tasks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .tasks-header h2 {
+            color: var(--secondary);
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .daily-stats {
+            background: rgba(0, 255, 136, 0.1);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            color: var(--secondary);
+        }
+        
+        /* Tasks Grid */
+        .tasks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        
+        .task-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(0, 255, 136, 0.1);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .task-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--secondary);
+            box-shadow: 0 10px 20px rgba(0, 255, 136, 0.1);
+        }
+        
+        .task-card.completed {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05));
+            border-color: var(--success);
+        }
+        
+        .task-card.completed::after {
+            content: '✓ COMPLETED';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--success);
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .task-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: var(--secondary);
+        }
+        
+        .task-reward {
+            background: rgba(255, 215, 0, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .task-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: white;
+        }
+        
+        .task-description {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .task-timer {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--accent);
+        }
+        
+        .task-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .task-btn.available {
+            background: linear-gradient(45deg, var(--secondary), #00cc70);
+            color: #000;
+        }
+        
+        .task-btn.completed {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--secondary);
+            cursor: not-allowed;
+        }
+        
+        .task-btn.disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+        }
+        
+        .task-btn.available:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+        
+        /* Loading Spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .spinner {
+            width: 70px;
+            height: 70px;
+            border: 5px solid rgba(0, 255, 136, 0.3);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 255, 136, 0.9);
+            color: #000;
+            padding: 15px 25px;
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Video Modal Styles */
+        .video-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            flex-direction: column;
+        }
+
+        .video-modal video {
+            width: 90%;
+            max-width: 800px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .timer-container {
+            margin-top: 30px;
+            background: rgba(0,0,0,0.7);
+            padding: 20px 40px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 24px;
+            color: var(--secondary);
+            border: 2px solid var(--secondary);
+        }
+
+        .timer-container.hidden {
+            display: none;
+        }
+
+        .close-video-btn {
+            margin-top: 20px;
+            background: rgba(255,0,85,0.8);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .close-video-btn:hover {
+            background: rgba(255,0,85,1);
+            transform: scale(1.05);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            margin-top: 15px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--secondary);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .waiting-message {
+            color: var(--accent);
+            font-size: 18px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .points-card {
+                min-width: 100%;
+            }
+            
+            .tasks-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tasks-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .rules-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .video-modal video {
+                width: 95%;
+            }
+
+            .timer-container {
+                padding: 15px 25px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-gift"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>Free Gift Points</h1>
+                    <p>Watch videos & earn free points!</p>
+                </div>
+            </div>
+            
+            <!-- User Points Card -->
+            <div class="points-card">
+                <div class="points-label">Your Gift Points Balance</div>
+                <div class="points-amount">
+                    <i class="fas fa-coins points-icon"></i>
+                    <span id="giftPoints">0</span>
+                </div>
+                <button class="convert-btn" id="convertBtn">
+                    <i class="fas fa-exchange-alt"></i>
+                    Convert to ZMW
+                </button>
+            </div>
+        </div>
+        
+        <!-- Instructions Section -->
+        <div class="instructions">
+            <h2><i class="fas fa-info-circle"></i> How It Works</h2>
+            <div class="rules-grid">
+                <div class="rule-card">
+                    <h3><i class="fas fa-exchange-alt"></i> Conversion Rate</h3>
+                    <p>1 ZMW = 50 Gift Points. Convert your points when you have enough!</p>
+                </div>
+                <div class="rule-card">
+                    <h3><i class="fas fa-video"></i> Earn Points</h3>
+                    <p>Watch videos to earn 2 Gift Points per video. Complete all tasks daily!</p>
+                </div>
+                <div class="rule-card">
+                    <h3><i class="fas fa-sync-alt"></i> Daily Reset</h3>
+                    <p>All tasks reset daily at midnight. Come back every day for more points!</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tasks Container -->
+        <div class="tasks-container">
+            <div class="tasks-header">
+                <h2><i class="fas fa-tasks"></i> Daily Free Tasks</h2>
+                <div class="daily-stats">
+                    <i class="fas fa-calendar-day"></i>
+                    <span id="dailyProgress">0/10 tasks completed</span>
+                </div>
+            </div>
+            
+            <div class="tasks-grid" id="tasksGrid">
+                <!-- Tasks will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notificationText">Points added successfully!</span>
+    </div>
+
+    <!-- Video Modal -->
+    <div class="video-modal" id="videoModal">
+        <!-- Video will be inserted here -->
+    </div>
+    
+    <script src="gifts.js"></script>
+</body>
+</html>

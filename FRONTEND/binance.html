@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit · Binance (TRON/BNB)</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-black: #0F0F0F;
+            --secondary-black: #1A1A1A;
+            --dark-black: #000000;
+            --golden: #FFD700;
+            --light-golden: #FFED4E;
+            --dark-golden: #B8860B;
+            --accent-yellow: #FFC107;
+            --white: #FFFFFF;
+            --light-bg: #1E1E1E;
+            --dark-text: #FFFFFF;
+            --light-text: #CCCCCC;
+            --card-bg: #1A1A1A;
+            --border-color: #333333;
+            --success-green: #28A745;
+            --error-red: #DC3545;
+            --overlay-bg: rgba(0, 0, 0, 0.85);
+            --shadow-golden: 0 0 15px rgba(255, 215, 0, 0.3);
+            --tron-color: #FF6B00;
+            --bnb-color: #F3BA2F;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--dark-black) 0%, var(--secondary-black) 100%);
+            color: var(--dark-text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+        
+        /* Main Container */
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255, 215, 0, 0.1);
+        }
+        
+        /* App Header */
+        .app-header {
+            background: linear-gradient(135deg, var(--dark-black), var(--primary-black));
+            color: var(--golden);
+            padding: 20px 16px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 2px solid var(--golden);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+        }
+        .header-title {
+            text-align: left;
+        }
+        .app-title {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            position: relative;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+        .app-subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+            color: var(--light-golden);
+            position: relative;
+            font-weight: 500;
+        }
+        .history-btn {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid var(--golden);
+            color: var(--golden);
+            padding: 8px 14px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        .history-btn:hover {
+            background: var(--golden);
+            color: var(--dark-black);
+        }
+        
+        /* Main Content */
+        .content-area {
+            padding: 30px 20px;
+        }
+        
+        /* Network Selection Row with real image icons */
+        .network-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .network-btn {
+            flex: 1;
+            max-width: 160px;
+            padding: 16px 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            background: var(--light-bg);
+            color: var(--light-text);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .network-btn img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+        .network-btn.tron:hover:not(:disabled),
+        .network-btn.tron.active {
+            border-color: var(--tron-color);
+            background: rgba(255,107,0,0.1);
+            color: var(--tron-color);
+        }
+        .network-btn.bnb:hover:not(:disabled),
+        .network-btn.bnb.active {
+            border-color: var(--bnb-color);
+            background: rgba(243,186,47,0.1);
+            color: var(--bnb-color);
+        }
+        .network-btn.active {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255,215,0,0.3);
+        }
+        .network-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Pending Warning */
+        .pending-warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: var(--accent-yellow);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        .pending-warning i {
+            margin-right: 8px;
+        }
+        
+        /* Deposit Details Card (shown after network selection) */
+        .deposit-card {
+            background: var(--light-bg);
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            display: none;
+        }
+        .deposit-card.active {
+            display: block;
+        }
+        
+        .chain-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,215,0,0.1);
+            padding: 8px 16px;
+            border-radius: 30px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .chain-badge img {
+            width: 20px;
+            height: 20px;
+        }
+        .chain-badge.tron { color: var(--tron-color); }
+        .chain-badge.bnb { color: var(--bnb-color); }
+        
+        /* Address + QR row with individual copy button */
+        .address-qr-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .qr-placeholder {
+            width: 100px;
+            height: 100px;
+            background: #2A2A2A;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .qr-placeholder img {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        .address-info {
+            flex: 1;
+            word-break: break-all;
+        }
+        .address-label {
+            color: var(--light-text);
+            font-size: 13px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .address-value {
+            background: var(--primary-black);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: monospace;
+            border: 1px solid var(--border-color);
+            margin-bottom: 8px;
+        }
+        .copy-icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--golden);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 5px;
+        }
+        .copy-icon-btn:hover {
+            color: var(--light-golden);
+        }
+        
+        /* Amount Input with individual copy button */
+        .amount-section {
+            margin: 20px 0;
+        }
+        .amount-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .amount-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .amount-input-group input {
+            flex: 1;
+            padding: 16px;
+            background: var(--primary-black);
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            color: var(--dark-text);
+            font-size: 18px;
+            outline: none;
+        }
+        .amount-input-group input:focus {
+            border-color: var(--golden);
+        }
+        .currency-badge {
+            background: rgba(255,215,0,0.1);
+            padding: 12px 18px;
+            border-radius: 14px;
+            font-weight: 700;
+            color: var(--golden);
+        }
+        .conversion-info {
+            margin-top: 10px;
+            text-align: right;
+            color: var(--light-text);
+            font-size: 14px;
+        }
+        .conversion-info strong {
+            color: var(--golden);
+        }
+        
+        /* I Have Sent Button */
+        .sent-btn {
+            width: 100%;
+            padding: 16px;
+            background: rgba(40,167,69,0.1);
+            border: 2px solid var(--success-green);
+            color: var(--success-green);
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .sent-btn:hover:not(:disabled) {
+            background: var(--success-green);
+            color: var(--dark-black);
+        }
+        .sent-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Modal for screenshot upload */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--overlay-bg);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid var(--golden);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-title {
+            color: var(--golden);
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .modal-form-group {
+            margin-bottom: 20px;
+        }
+        .modal-label {
+            display: block;
+            color: var(--light-golden);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 14px;
+            background: var(--light-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--dark-text);
+        }
+        .modal-input:focus {
+            border-color: var(--golden);
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        .modal-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .modal-btn.cancel {
+            background: var(--light-bg);
+            color: var(--light-text);
+            border: 1px solid var(--border-color);
+        }
+        .modal-btn.submit {
+            background: linear-gradient(135deg, var(--golden), var(--dark-golden));
+            color: var(--dark-black);
+        }
+        
+        /* History Modal specific */
+        .history-list {
+            margin-top: 10px;
+        }
+        .history-item {
+            background: var(--light-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--golden);
+        }
+        .history-item.pending {
+            border-left-color: var(--accent-yellow);
+        }
+        .history-item.success {
+            border-left-color: var(--success-green);
+        }
+        .history-item.failed {
+            border-left-color: var(--error-red);
+        }
+        .history-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .history-label {
+            color: var(--light-text);
+        }
+        .history-value {
+            color: var(--dark-text);
+            font-weight: 600;
+        }
+        .history-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .status-pending {
+            background: rgba(255,193,7,0.1);
+            color: var(--accent-yellow);
+        }
+        .status-success {
+            background: rgba(40,167,69,0.1);
+            color: var(--success-green);
+        }
+        .status-failed {
+            background: rgba(220,53,69,0.1);
+            color: var(--error-red);
+        }
+        .empty-history {
+            text-align: center;
+            padding: 30px;
+            color: var(--light-text);
+        }
+        
+        /* Loading Overlay */
+        .center-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--overlay-bg);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        .center-loading.active { display: flex; }
+        .center-spinner {
+            width: 80px;
+            height: 80px;
+            position: relative;
+        }
+        .center-spinner div {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--golden);
+            border-radius: 50%;
+            animation: center-spin 1.2s linear infinite;
+            box-shadow: var(--shadow-golden);
+        }
+        .center-spinner div:nth-child(1) { animation-delay: 0s; top: 37px; left: 66px; }
+        .center-spinner div:nth-child(2) { animation-delay: -0.1s; top: 22px; left: 62px; }
+        .center-spinner div:nth-child(3) { animation-delay: -0.2s; top: 13px; left: 52px; }
+        .center-spinner div:nth-child(4) { animation-delay: -0.3s; top: 8px; left: 37px; }
+        .center-spinner div:nth-child(5) { animation-delay: -0.4s; top: 13px; left: 22px; }
+        .center-spinner div:nth-child(6) { animation-delay: -0.5s; top: 22px; left: 13px; }
+        .center-spinner div:nth-child(7) { animation-delay: -0.6s; top: 37px; left: 8px; }
+        .center-spinner div:nth-child(8) { animation-delay: -0.7s; top: 52px; left: 13px; }
+        .center-spinner div:nth-child(9) { animation-delay: -0.8s; top: 62px; left: 22px; }
+        .center-spinner div:nth-child(10) { animation-delay: -0.9s; top: 66px; left: 37px; }
+        .center-spinner div:nth-child(11) { animation-delay: -1s; top: 62px; left: 52px; }
+        .center-spinner div:nth-child(12) { animation-delay: -1.1s; top: 52px; left: 62px; }
+        @keyframes center-spin {
+            0%,20%,80%,100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(2); opacity: 1; box-shadow: 0 0 20px var(--golden); }
+        }
+        .center-loading-text {
+            position: absolute;
+            bottom: 40%;
+            color: var(--golden);
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        /* Page Disabled Overlay */
+        .page-disabled {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--overlay-bg);
+            z-index: 9998;
+            display: none;
+            backdrop-filter: blur(5px);
+        }
+        .page-disabled.active { display: block; }
+        
+        /* Toast Messages */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            background: #1A1A1A;
+            border-left: 4px solid var(--golden);
+            border-radius: 14px;
+            color: #FFFFFF;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+            animation: slideDown 0.3s ease;
+            z-index: 10000;
+            font-size: 14px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .toast.success { border-left-color: #28A745; }
+        .toast.error { border-left-color: #DC3545; }
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .copyright {
+            text-align: center;
+            color: var(--light-text);
+            font-size: 13px;
+            margin-top: 30px;
+            padding: 20px 0;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        @media (max-width: 600px) {
+            body { padding: 0; }
+            .container { border-radius: 0; min-height: 100vh; border: none; }
+            .network-row { gap: 10px; }
+            .address-qr-row { flex-direction: column; align-items: flex-start; }
+            .qr-placeholder { align-self: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="center-loading" id="centerLoading">
+        <div class="center-spinner"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+        <div class="center-loading-text" id="centerLoadingText">Processing...</div>
+    </div>
+    
+    <!-- Page Disabled Overlay -->
+    <div class="page-disabled" id="pageDisabled"></div>
+    
+    <!-- Screenshot Upload Modal -->
+    <div class="modal-overlay" id="screenshotModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Confirm Transfer</h3>
+            <div class="modal-form-group">
+                <label class="modal-label">Transaction Hash / ID</label>
+                <input type="text" class="modal-input" id="txHash" placeholder="e.g., 0xabc123...">
+            </div>
+            <div class="modal-form-group">
+                <label class="modal-label">Upload Screenshot</label>
+                <input type="file" class="modal-input" id="screenshotFile" accept="image/*">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" id="cancelModalBtn">Cancel</button>
+                <button class="modal-btn submit" id="submitModalBtn">Submit</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- History Modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Deposit History</h3>
+            <div id="historyList" class="history-list">
+                <!-- Dynamic content will be inserted here -->
+                <div class="empty-history">Loading...</div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" id="closeHistoryBtn">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- App Header with History Button -->
+        <div class="app-header">
+            <div class="header-title">
+                <div class="app-title">Deposit Funds</div>
+                <div class="app-subtitle">Binance · TRON / BNB</div>
+            </div>
+            <button class="history-btn" id="historyBtn">
+                <i class="fas fa-history"></i> History
+            </button>
+        </div>
+        
+        <div class="content-area">
+            <!-- Pending Warning -->
+            <div class="pending-warning" id="pendingWarning">
+                <i class="fas fa-clock"></i> You have a pending deposit. Please wait for confirmation before making another.
+            </div>
+            
+            <!-- Network Selection Row with real image icons -->
+            <div class="network-row">
+                <button class="network-btn tron" id="tronBtn" disabled>
+                    <img src="https://cryptologos.cc/logos/tron-trx-logo.png" alt="TRON">
+                    <span>TRON</span>
+                </button>
+                <button class="network-btn bnb" id="bnbBtn" disabled>
+                    <img src="https://cryptologos.cc/logos/bnb-bnb-logo.png" alt="BNB">
+                    <span>BNB</span>
+                </button>
+            </div>
+            
+            <!-- Deposit Details Card (visible after selection) -->
+            <div class="deposit-card" id="depositCard">
+                <div class="chain-badge" id="chainBadge">
+                    <img id="chainIcon" src="" alt="">
+                    <span id="chainName">TRON</span>
+                </div>
+                
+                <!-- Address + QR row with individual copy button -->
+                <div class="address-qr-row">
+                    <div class="qr-placeholder" id="qrContainer">
+                        <!-- QR code will be set to tron.png or bnb.png -->
+                        <img id="qrImage" src="" alt="QR Code">
+                    </div>
+                    <div class="address-info">
+                        <div class="address-label">
+                            Deposit Address
+                            <button class="copy-icon-btn" id="copyAddressBtn" title="Copy Address">
+                                <i class="far fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="address-value" id="addressDisplay">TXYZ123...</div>
+                    </div>
+                </div>
+                
+                <!-- Amount Input with individual copy button -->
+                <div class="amount-section">
+                    <div class="amount-header">
+                        <span class="amount-label">Amount (NAD)</span>
+                        <button class="copy-icon-btn" id="copyAmountBtn" title="Copy USD Amount">
+                            <i class="far fa-copy"></i>
+                        </button>
+                    </div>
+                    <div class="amount-input-group">
+                        <input type="number" id="amountInput" placeholder="Enter NAD amount" min="1" step="any">
+                        <span class="currency-badge">NAD</span>
+                    </div>
+                    <div class="conversion-info" id="conversionInfo">
+                        ≈ <strong>0.00 USD</strong>
+                    </div>
+                </div>
+                
+                <!-- I Have Sent Button -->
+                <button class="sent-btn" id="sentBtn" disabled>
+                    <i class="fas fa-paper-plane"></i> I have sent
+                </button>
+            </div>
+            
+            <div class="copyright">© 2026 Classic Maximize Pay Namibia</div>
+        </div>
+    </div>
+    
+    <script src="binance.js"></script>
+</body>
+</html>

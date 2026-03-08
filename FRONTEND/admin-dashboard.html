@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | ATLAS ZONE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root {
+            --primary: #000;
+            --accent: #ffeb3b;
+            --accent-dark: #fbc02d;
+            --text: #fff;
+            --text-secondary: #aaa;
+            --card-bg: rgba(0, 0, 0, 0.7);
+            --sidebar-width: 250px;
+            --sidebar-collapsed: 70px;
+            --header-height: 60px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--primary);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Layout */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Mobile Menu Toggle Button */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1100;
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+            transition: all 0.3s;
+        }
+        
+        .mobile-menu-toggle:hover {
+            background: var(--accent-dark);
+            transform: scale(1.05);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: rgba(0, 0, 0, 0.95);
+            border-right: 1px solid var(--accent);
+            height: 100vh;
+            position: fixed;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.2);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) rgba(255, 235, 59, 0.1);
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 235, 59, 0.1);
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: var(--accent);
+            border-radius: 10px;
+        }
+        
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed);
+        }
+        
+        .sidebar.mobile-hidden {
+            transform: translateX(-100%);
+        }
+        
+        .sidebar.mobile-visible {
+            transform: translateX(0);
+        }
+        
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            backdrop-filter: blur(3px);
+        }
+        
+        .sidebar-overlay.active {
+            display: block;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 235, 59, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+        
+        .logo {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 18px;
+        }
+        
+        .logo-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--accent);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .close-sidebar-mobile {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+        
+        .menu-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            color: var(--text);
+            text-decoration: none;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            white-space: nowrap;
+        }
+        
+        .menu-item:hover, .menu-item.active {
+            background-color: rgba(255, 235, 59, 0.1);
+            border-left: 4px solid var(--accent);
+            color: var(--accent);
+        }
+        
+        .menu-item i {
+            margin-right: 15px;
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+            min-width: 24px;
+        }
+        
+        .menu-text {
+            opacity: 1;
+            transition: opacity 0.3s;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .sidebar.collapsed .menu-text {
+            opacity: 0;
+            display: none;
+        }
+        
+        .menu-badge {
+            margin-left: auto;
+            background: var(--accent);
+            color: var(--primary);
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s ease;
+            width: 100%;
+        }
+        
+        .main-content.expanded {
+            margin-left: var(--sidebar-collapsed);
+        }
+        
+        .main-content.full-width {
+            margin-left: 0;
+        }
+        
+        /* Header */
+        .header {
+            height: var(--header-height);
+            background-color: rgba(0, 0, 0, 0.9);
+            border-bottom: 1px solid var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        
+        .toggle-sidebar {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 20px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .toggle-sidebar:hover {
+            background-color: rgba(255, 235, 59, 0.1);
+        }
+        
+        .header-title {
+            font-size: 20px;
+            color: var(--accent);
+            font-weight: bold;
+            display: none;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-info {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: var(--accent);
+            font-size: 14px;
+        }
+        
+        .user-role {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        /* Dashboard Content */
+        .dashboard {
+            padding: 20px;
+        }
+        
+        .page-title {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .page-title h1 {
+            font-size: 24px;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+        }
+        
+        .date {
+            color: var(--text-secondary);
+            font-size: 14px;
+            background: rgba(255, 235, 59, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 235, 59, 0.2);
+        }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(255, 235, 59, 0.3);
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(255, 235, 59, 0.2);
+        }
+        
+        .stat-card i {
+            font-size: 30px;
+            color: var(--accent);
+            margin-bottom: 15px;
+        }
+        
+        .stat-card h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .change {
+            font-size: 12px;
+            color: #4caf50;
+        }
+        
+        .stat-card .change.negative {
+            color: #f44336;
+        }
+        
+        /* Content Sections */
+        .content-section {
+            margin-bottom: 30px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 235, 59, 0.3);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .section-header h2 {
+            font-size: 18px;
+            color: var(--accent);
+        }
+        
+        .view-all {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 235, 59, 0.1);
+            padding: 6px 12px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 235, 59, 0.2);
+        }
+        
+        .view-all i {
+            margin-left: 5px;
+            transition: transform 0.3s;
+        }
+        
+        .view-all:hover {
+            background: rgba(255, 235, 59, 0.2);
+        }
+        
+        .view-all:hover i {
+            transform: translateX(3px);
+            color: var(--accent-dark);
+        }
+        
+        /* Tables */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.1);
+            min-width: 600px;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .data-table th {
+            background-color: rgba(255, 235, 59, 0.1);
+            color: var(--accent);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .data-table tr:hover {
+            background-color: rgba(255, 235, 59, 0.05);
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .status.active {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+        
+        .status.inactive {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 16px;
+            transition: color 0.3s;
+            padding: 5px;
+        }
+        
+        .action-btn:hover {
+            color: var(--accent-dark);
+        }
+        
+        /* Loading and Error States */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            flex-direction: column;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 235, 59, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        /* Mobile Responsive Design */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .sidebar:not(.collapsed) {
+                width: 250px;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+            }
+            
+            .main-content.expanded {
+                margin-left: 70px;
+            }
+            
+            .logo-text, .menu-text {
+                opacity: 0;
+                display: none;
+            }
+            
+            .sidebar:not(.collapsed) .logo-text,
+            .sidebar:not(.collapsed) .menu-text {
+                opacity: 1;
+                display: block;
+            }
+            
+            .stats-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .header-title {
+                display: block;
+                font-size: 16px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .mobile-menu-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .sidebar {
+                width: 280px;
+                transform: translateX(-100%);
+                z-index: 1100;
+            }
+            
+            .sidebar.mobile-visible {
+                transform: translateX(0);
+            }
+            
+            .sidebar.collapsed {
+                width: 280px;
+            }
+            
+            .sidebar-header {
+                padding: 15px;
+            }
+            
+            .close-sidebar-mobile {
+                display: block;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .header {
+                padding: 0 15px;
+                height: 60px;
+            }
+            
+            .toggle-sidebar {
+                display: none;
+            }
+            
+            .user-info {
+                display: none;
+            }
+            
+            .user-avatar {
+                width: 35px;
+                height: 35px;
+                min-width: 35px;
+                font-size: 14px;
+            }
+            
+            .dashboard {
+                padding: 15px;
+                padding-top: 75px; /* Space for fixed header and mobile menu button */
+            }
+            
+            .stats-cards {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .stat-card .value {
+                font-size: 24px;
+            }
+            
+            .page-title {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .page-title h1 {
+                font-size: 20px;
+            }
+            
+            .data-table th, .data-table td {
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .action-btn {
+                margin-right: 5px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+            }
+            
+            .sidebar.collapsed {
+                width: 100%;
+            }
+            
+            .mobile-menu-toggle {
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+                top: 10px;
+                left: 10px;
+            }
+            
+            .header {
+                padding: 0 10px;
+                height: 55px;
+            }
+            
+            .dashboard {
+                padding: 10px;
+                padding-top: 70px;
+            }
+            
+            .stats-cards {
+                gap: 10px;
+            }
+            
+            .stat-card {
+                padding: 12px;
+            }
+            
+            .stat-card i {
+                font-size: 24px;
+            }
+            
+            .stat-card h3 {
+                font-size: 12px;
+            }
+            
+            .stat-card .value {
+                font-size: 20px;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .view-all {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .menu-item {
+                padding: 12px 15px;
+            }
+        }
+        
+        /* Animation for sidebar toggle */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Pulse animation for stats */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 235, 59, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Tooltip for collapsed menu items */
+        .menu-item .tooltip {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: var(--accent);
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid var(--accent);
+            white-space: nowrap;
+            font-size: 14px;
+            z-index: 1001;
+            margin-left: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .sidebar.collapsed .menu-item:hover .tooltip {
+            display: block;
+        }
+        
+        @media (min-width: 769px) {
+            .sidebar.collapsed .menu-item {
+                position: relative;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar mobile-hidden" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-container">
+                <div class="logo">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="logo-text">POWER NEST</div>
+            </div>
+            <button class="close-sidebar-mobile" id="close-sidebar-mobile">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-menu">
+            <a href="admin.html" class="menu-item active">
+                <i class="fas fa-home"></i>
+                <span class="menu-text">Deposits</span>
+                <div class="tooltip">Deposits</div>
+            </a>
+            <a href="admin-payment-numbers.html" class="menu-item active">
+                <i class="fas fa-wrench"></i>
+                <span class="menu-text">Payment Methods</span>
+                <div class="tooltip">Payment Methods</div>
+            </a>
+            <a href="admin-withdraw.html" class="menu-item">
+                <i class="fas fa-users"></i>
+                <span class="menu-text">Withdrawals</span>
+                <div class="tooltip">Withdrawals</div>
+            </a>
+            <a href="admin-upload-videos.html" class="menu-item">
+                <i class="fas fa-video"></i>
+                <span class="menu-text">Videos</span>
+                <div class="tooltip">Videos</div>
+            </a>
+            <a href="admin-messages.html" class="menu-item">
+                <i class="fas fa-comment-alt"></i>
+                <span class="menu-text">Announsments</span>
+                <div class="tooltip">Announsments</div>
+            </a>
+            <a href="beem-sms.html" class="menu-item">
+                <i class="fas fa-store"></i>
+                <span class="menu-text">Send SMS</span>
+                <div class="tooltip">Send SMS</div>
+            </a>
+            <a href="admin-invest.html" class="menu-item">
+                <i class="fas fa-file-invoice"></i>
+                <span class="menu-text">Invest To Users</span>
+                <div class="tooltip">Invest To Users</div>
+            </a>
+            <a href="admin-users.html" class="menu-item">
+                <i class="fas fa-user-friends"></i>
+                <span class="menu-text">Users</span>
+                <div class="tooltip">Users</div>
+                <span class="menu-badge" id="users-badge">0</span>
+            </a>
+            <a href="admin-referrals.html" class="menu-item">
+                <i class="fas fa-user-plus"></i>
+                <span class="menu-text">Users with Referrals</span>
+                <div class="tooltip">Users with Referrals</div>
+            </a>
+            <a href="admin-active-referrals.html" class="menu-item">
+                <i class="fas fa-user-check"></i>
+                <span class="menu-text">Active Referrals</span>
+                <div class="tooltip">Active Referrals</div>
+            </a>
+            <a href="#" class="menu-item" id="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="menu-text">Logout</span>
+                <div class="tooltip">Logout</div>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content full-width" id="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <button class="toggle-sidebar" id="toggle-sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="header-title">Admin Dashboard</div>
+            </div>
+            
+            <div class="user-menu">
+                <div class="user-info">
+                    <div class="user-name" id="admin-name">Loading...</div>
+                    <div class="user-role">System Administrator</div>
+                </div>
+                <div class="user-avatar">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dashboard Content -->
+        <div class="dashboard">
+            <div class="page-title">
+                <h1>Admin Dashboard</h1>
+                <div class="date">Today: <span id="current-date"></span></div>
+            </div>
+            
+            <!-- Error message container -->
+            <div id="error-message" class="error-message" style="display: none;"></div>
+            
+            <!-- Stats Cards -->
+            <div class="stats-cards" id="stats-cards">
+                <div class="stat-card pulse">
+                    <i class="fas fa-users"></i>
+                    <h3>Total Users</h3>
+                    <div class="value" id="total-users">0</div>
+                    <div class="change" id="user-change">Loading data...</div>
+                </div>
+                
+                <div class="stat-card">
+                    <i class="fas fa-user-plus"></i>
+                    <h3>New Users (Last 7 days)</h3>
+                    <div class="value" id="new-users">0</div>
+                    <div class="change" id="new-users-change">Loading data...</div>
+                </div>
+                
+                <div class="stat-card">
+                    <i class="fas fa-user-check"></i>
+                    <h3>Active Users</h3>
+                    <div class="value" id="active-users">0</div>
+                    <div class="change" id="active-users-change">Loading data...</div>
+                </div>
+                
+                <div class="stat-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Growth Rate</h3>
+                    <div class="value" id="growth-rate">0%</div>
+                    <div class="change" id="growth-rate-change">Loading data...</div>
+                </div>
+            </div>
+            
+            <!-- Loading indicator -->
+            <div id="loading-indicator" class="loading">
+                <div class="spinner"></div>
+                <p>Loading user data...</p>
+            </div>
+            
+            <!-- Recent Users Section -->
+            <div class="content-section" id="users-section" style="display: none;">
+                <div class="section-header">
+                    <h2>Recent Users</h2>
+                    <a href="admin-users.html" class="view-all">View All Users <i class="fas fa-arrow-right"></i></a>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Phone</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- Users will be populated here by JavaScript -->
+                            <tr>
+                                <td colspan="6" style="text-align: center;">No users found</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIX3aQq3VEBq269Jdrk77CefNttqAR51s",
+  authDomain: "mozambique-newhope.firebaseapp.com",
+  databaseURL: "https://mozambique-newhope-default-rtdb.firebaseio.com",
+  projectId: "mozambique-newhope",
+  storageBucket: "mozambique-newhope.firebasestorage.app",
+  messagingSenderId: "133563964959",
+  appId: "1:133563964959:web:d3f183b721d540140f7f2a",
+  measurementId: "G-FY6CNVX6ZK"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        
+        // DOM Elements
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar');
+        const mobileMenuToggleBtn = document.getElementById('mobile-menu-toggle');
+        const closeSidebarMobileBtn = document.getElementById('close-sidebar-mobile');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        const adminNameElement = document.getElementById('admin-name');
+        const logoutBtn = document.getElementById('logout-btn');
+        const errorMessageElement = document.getElementById('error-message');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const usersSection = document.getElementById('users-section');
+        const usersBadge = document.getElementById('users-badge');
+        
+        // Stats elements
+        const totalUsersElement = document.getElementById('total-users');
+        const userChangeElement = document.getElementById('user-change');
+        const newUsersElement = document.getElementById('new-users');
+        const newUsersChangeElement = document.getElementById('new-users-change');
+        const activeUsersElement = document.getElementById('active-users');
+        const activeUsersChangeElement = document.getElementById('active-users-change');
+        const growthRateElement = document.getElementById('growth-rate');
+        const growthRateChangeElement = document.getElementById('growth-rate-change');
+        
+        // Set current date
+        const currentDateElement = document.getElementById('current-date');
+        const today = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        currentDateElement.textContent = today.toLocaleDateString('en-US', options);
+        
+        // Check screen size and adjust sidebar
+        function checkScreenSize() {
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile) {
+                sidebar.classList.add('mobile-hidden');
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.add('full-width');
+                mobileMenuToggleBtn.style.display = 'flex';
+                toggleSidebarBtn.style.display = 'none';
+            } else {
+                sidebar.classList.remove('mobile-hidden', 'mobile-visible');
+                sidebar.classList.add('collapsed');
+                sidebarOverlay.classList.remove('active');
+                mobileMenuToggleBtn.style.display = 'none';
+                toggleSidebarBtn.style.display = 'flex';
+                
+                // For tablet and desktop, set appropriate margin
+                if (window.innerWidth <= 992) {
+                    mainContent.classList.remove('full-width');
+                    mainContent.style.marginLeft = '70px';
+                } else {
+                    mainContent.style.marginLeft = '';
+                }
+            }
+        }
+        
+        // Toggle sidebar for desktop
+        toggleSidebarBtn.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+            
+            // Change icon based on state
+            const icon = this.querySelector('i');
+            if (sidebar.classList.contains('collapsed')) {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            } else {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            }
+        });
+        
+        // Toggle sidebar for mobile
+        mobileMenuToggleBtn.addEventListener('click', function() {
+            sidebar.classList.add('mobile-visible');
+            sidebar.classList.remove('mobile-hidden');
+            sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        
+        // Close sidebar on mobile
+        function closeMobileSidebar() {
+            sidebar.classList.remove('mobile-visible');
+            sidebar.classList.add('mobile-hidden');
+            sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        closeSidebarMobileBtn.addEventListener('click', closeMobileSidebar);
+        sidebarOverlay.addEventListener('click', closeMobileSidebar);
+        
+        // Close sidebar when clicking a menu item on mobile
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    closeMobileSidebar();
+                }
+            });
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', checkScreenSize);
+        
+        // Initialize screen check
+        checkScreenSize();
+        
+        // Check authentication state
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // User is signed in
+                adminNameElement.textContent = user.displayName || user.email || 'Admin User';
+                loadUserData();
+            } else {
+                // User is signed out, redirect to login
+                window.location.href = 'login.html';
+            }
+        });
+        
+        // Logout function
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            auth.signOut().then(() => {
+                window.location.href = 'login.html';
+            }).catch(error => {
+                showError('Logout failed: ' + error.message);
+            });
+        });
+        
+        // Show error message
+        function showError(message) {
+            errorMessageElement.textContent = message;
+            errorMessageElement.style.display = 'block';
+            
+            setTimeout(() => {
+                errorMessageElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Load user data from Firebase Realtime Database
+        function loadUserData() {
+            // Reference to the users node in Realtime Database
+            const usersRef = database.ref('users');
+            
+            // Get all users
+            usersRef.once('value').then((snapshot) => {
+                if (!snapshot.exists()) {
+                    loadingIndicator.style.display = 'none';
+                    showError('No users found in database');
+                    return;
+                }
+                
+                const users = [];
+                snapshot.forEach((childSnapshot) => {
+                    const userData = childSnapshot.val();
+                    users.push({
+                        id: childSnapshot.key,
+                        ...userData
+                    });
+                });
+                
+                // Update users badge
+                usersBadge.textContent = users.length;
+                
+                // Calculate stats
+                const totalUsers = users.length;
+                
+                // Calculate new users in the last 7 days
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                
+                const newUsers = users.filter(user => {
+                    if (!user.signupDate) return false;
+                    const signupDate = new Date(user.signupDate);
+                    return signupDate >= oneWeekAgo;
+                }).length;
+                
+                // For active users, we'll assume all are active since there's no status field
+                const activeUsers = totalUsers;
+                const growthRate = totalUsers > 0 ? ((newUsers / totalUsers) * 100).toFixed(1) : 0;
+                
+                // Update UI with stats
+                totalUsersElement.textContent = totalUsers;
+                userChangeElement.textContent = `${newUsers} new this week`;
+                
+                newUsersElement.textContent = newUsers;
+                newUsersChangeElement.textContent = 'Last 7 days';
+                
+                activeUsersElement.textContent = activeUsers;
+                activeUsersChangeElement.textContent = `${Math.round((activeUsers / totalUsers) * 100)}% of total`;
+                
+                growthRateElement.textContent = `${growthRate}%`;
+                growthRateChangeElement.textContent = 'Weekly growth';
+                
+                // Hide loading indicator and show content
+                loadingIndicator.style.display = 'none';
+                usersSection.style.display = 'block';
+                
+                // Populate users table with the 5 most recent users
+                const recentUsers = users
+                    .filter(user => user.signupDate)
+                    .sort((a, b) => new Date(b.signupDate) - new Date(a.signupDate))
+                    .slice(0, 5);
+                
+                populateUsersTable(recentUsers);
+            }).catch(error => {
+                loadingIndicator.style.display = 'none';
+                showError('Failed to load user data: ' + error.message);
+            });
+        }
+        
+        // Populate users table
+        function populateUsersTable(users) {
+            const tableBody = document.getElementById('users-table-body');
+            tableBody.innerHTML = '';
+            
+            if (users.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center;">No users found</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                
+                // Format signup date
+                const signupDate = user.signupDate ? new Date(user.signupDate).toLocaleDateString() : 'N/A';
+                
+                row.innerHTML = `
+                    <td>${user.id.substring(0, 8)}...</td>
+                    <td>${user.phone || 'N/A'}</td>
+                    <td>${user.balance ? user.balance + ' TSh' : '0 TSh'}</td>
+                    <td><span class="status active">Active</span></td>
+                    <td>${signupDate}</td>
+                    <td>
+                        <button class="action-btn" onclick="viewUser('${user.id}')" title="View User"><i class="fas fa-eye"></i></button>
+                        <button class="action-btn" onclick="editUser('${user.id}')" title="Edit User"><i class="fas fa-edit"></i></button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // View user details
+        function viewUser(userId) {
+            window.location.href = `admin-user-details.html?id=${userId}`;
+        }
+        
+        // Edit user details
+        function editUser(userId) {
+            window.location.href = `admin-edit-user.html?id=${userId}`;
+        }
+        
+        // Simulate loading data
+        setTimeout(() => {
+            document.querySelector('.pulse').classList.remove('pulse');
+        }, 3000);
+    </script>
+</body>
+</html>

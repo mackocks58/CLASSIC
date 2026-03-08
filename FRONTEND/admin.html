@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Payment Approvals</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #000000;
+            --secondary: #ffd700;
+            --dark: #0f0f1a;
+            --light: #f0f0ff;
+            --danger: #ff0055;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --info: #0099ff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            min-height: 100vh;
+        }
+        
+        /* Notification Container */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1003;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .notification {
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease-out;
+            max-width: 350px;
+        }
+        
+        .notification.success {
+            background: var(--success);
+            color: #000;
+        }
+        
+        .notification.error {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .notification.warning {
+            background: var(--warning);
+            color: #000;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* Access Denied Message */
+        .access-denied {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .access-denied-content {
+            background: linear-gradient(145deg, #1a1a2a, #0f0f1a);
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border: 1px solid var(--danger);
+        }
+        
+        .access-denied-icon {
+            font-size: 64px;
+            color: var(--danger);
+            margin-bottom: 20px;
+        }
+        
+        .access-denied h2 {
+            color: var(--danger);
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        .access-denied p {
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        .login-redirect-btn {
+            padding: 12px 25px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .login-redirect-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 0, 85, 0.4);
+        }
+        
+        /* Admin Layout */
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(135deg, #0a0a1a, #1a1a2a);
+            padding: 20px 0;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .logo {
+            text-align: center;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .logo h2 {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 24px;
+            font-weight: 700;
+            padding: 10px;
+        }
+        
+        .nav-menu {
+            padding: 0 20px;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--light);
+            text-decoration: none;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background: rgba(110, 0, 255, 0.2);
+            color: var(--primary);
+        }
+        
+        .nav-item i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            background: linear-gradient(135deg, #0f0f1a, #1a1a2a);
+            overflow-x: auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-profile img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+            border: 2px solid var(--secondary);
+        }
+        
+        .logout-btn {
+            padding: 8px 15px;
+            background: rgba(255, 0, 85, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+        
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(145deg, #1a1a2a, #0f0f1a);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
+        }
+        
+        .stat-card.pending {
+            border-top: 4px solid var(--warning);
+        }
+        
+        .stat-card.approved {
+            border-top: 4px solid var(--success);
+        }
+        
+        .stat-card.rejected {
+            border-top: 4px solid var(--danger);
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card.pending .stat-number {
+            color: var(--warning);
+        }
+        
+        .stat-card.approved .stat-number {
+            color: var(--success);
+        }
+        
+        .stat-card.rejected .stat-number {
+            color: var(--danger);
+        }
+        
+        .stat-label {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .tab.active {
+            border-bottom-color: var(--secondary);
+            color: var(--secondary);
+        }
+        
+        /* Requests Table */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        .payments-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: linear-gradient(145deg, #1a1a2a, #0f0f1a);
+            min-width: 1000px;
+        }
+        
+        .payments-table th {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--secondary);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            white-space: nowrap;
+        }
+        
+        .payments-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            vertical-align: middle;
+        }
+        
+        .payments-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .payments-table tr:hover {
+            background: rgba(255, 215, 0, 0.05);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+            border: 2px solid var(--secondary);
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            text-align: center;
+            min-width: 80px;
+        }
+        
+        .status-pending {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+        }
+        
+        .status-approved {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+        }
+        
+        .status-rejected {
+            background: rgba(255, 0, 85, 0.2);
+            color: var(--danger);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            min-width: 70px;
+            font-size: 13px;
+        }
+        
+        .btn-approve {
+            background: var(--success);
+            color: #000;
+        }
+        
+        .btn-reject {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-delete {
+            background: rgba(255, 0, 85, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+        
+        .btn-view {
+            background: rgba(255, 215, 0, 0.2);
+            color: var(--secondary);
+            border: 1px solid var(--secondary);
+        }
+        
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button-spinner {
+            display: none;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(0,0,0,0.3);
+            border-radius: 50%;
+            border-top-color: #000;
+            animation: spin 1s linear infinite;
+        }
+        
+        .btn-reject .button-spinner,
+        .btn-delete .button-spinner {
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: linear-gradient(145deg, #1a1a2a, #0f0f1a);
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid var(--secondary);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .modal-title {
+            color: var(--secondary);
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--light);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            margin-bottom: 25px;
+        }
+        
+        .modal-info {
+            margin-bottom: 15px;
+        }
+        
+        .modal-info-label {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .modal-info-value {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--secondary);
+        }
+        
+        .proof-image {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 2px solid var(--secondary);
+        }
+        
+        .commission-info {
+            background: rgba(255, 215, 0, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .commission-level {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .commission-level:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1002;
+        }
+        
+        .spinner {
+            width: 70px;
+            height: 70px;
+            display: inline-block;
+            position: relative;
+        }
+        
+        .spinner::after,
+        .spinner::before {
+            content: '';  
+            box-sizing: border-box;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid var(--secondary);
+            position: absolute;
+            left: 0;
+            top: 0;
+            animation: spinner-anim 1s linear infinite;
+        }
+        
+        .spinner::after {
+            animation-delay: 0.1s;
+        }
+        
+        @keyframes spinner-anim {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+        
+        .loading-text {
+            color: var(--secondary);
+            margin-top: 20px;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .admin-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                padding: 15px;
+            }
+            
+            .stats-container {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .modal-footer {
+                flex-direction: column;
+            }
+            
+            .modal-footer .btn {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .access-denied-content {
+                padding: 20px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                text-align: center;
+            }
+            
+            .payments-table th, 
+            .payments-table td {
+                padding: 10px 8px;
+            }
+            
+            .btn {
+                font-size: 12px;
+                padding: 5px 8px;
+                min-width: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification Container -->
+    <div class="notification-container" id="notificationContainer"></div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Loading...</div>
+    </div>
+    
+    <!-- Access Denied Message (Initially Hidden) -->
+    <div class="access-denied" id="accessDenied" style="display: none;">
+        <div class="access-denied-content">
+            <div class="access-denied-icon">
+                <i class="fas fa-ban"></i>
+            </div>
+            <h2>Access Denied</h2>
+            <p>You don't have permission to access the admin panel. Please contact the system administrator if you believe this is an error.</p>
+            <button class="login-redirect-btn" id="loginRedirectBtn">Go to Login Page</button>
+        </div>
+    </div>
+    
+    <!-- Admin Panel (Initially Hidden) -->
+    <div class="admin-container" id="adminPanel" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <div class="nav-menu">
+                <a href="#" class="nav-item active">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Payment Approvals</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>User Management</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <h1>Payment Approvals Management</h1>
+                <div class="header-actions">
+                    <div class="user-profile">
+                        <div class="user-avatar">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <span id="adminName">Admin</span>
+                    </div>
+                    <button class="logout-btn" id="logoutBtn">Logout</button>
+                </div>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="stats-container">
+                <div class="stat-card pending">
+                    <div class="stat-number" id="pendingCount">0</div>
+                    <div class="stat-label">Pending Payments</div>
+                </div>
+                <div class="stat-card approved">
+                    <div class="stat-number" id="approvedCount">0</div>
+                    <div class="stat-label">Approved Payments</div>
+                </div>
+                <div class="stat-card rejected">
+                    <div class="stat-number" id="rejectedCount">0</div>
+                    <div class="stat-label">Rejected Payments</div>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab active" data-tab="pending">Pending Payments</div>
+                <div class="tab" data-tab="approved">Approved Payments</div>
+                <div class="tab" data-tab="rejected">Rejected Payments</div>
+            </div>
+            
+            <!-- Payments Table -->
+            <div class="table-container">
+                <table class="payments-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Amount</th>
+                            <th>Network</th>
+                            <th>Phone Number</th>
+                            <th>Proof Type</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsTableBody">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Confirmation Modal -->
+    <div class="modal-overlay" id="actionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="actionModalTitle">Confirm Action</h3>
+                <button class="close-modal" id="closeActionModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="actionModalContent">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-reject" id="cancelActionBtn">Cancel</button>
+                <button class="btn btn-approve" id="confirmActionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Deletion</h3>
+                <button class="close-modal" id="closeDeleteModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="deleteModalContent">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-reject" id="cancelDeleteBtn">Cancel</button>
+                <button class="btn btn-delete" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Details Modal -->
+    <div class="modal-overlay" id="detailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Payment Request Details</h3>
+                <button class="close-modal" id="closeDetailsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="detailsModalContent">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-reject" id="closeDetailsBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIX3aQq3VEBq269Jdrk77CefNttqAR51s",
+  authDomain: "mozambique-newhope.firebaseapp.com",
+  databaseURL: "https://mozambique-newhope-default-rtdb.firebaseio.com",
+  projectId: "mozambique-newhope",
+  storageBucket: "mozambique-newhope.firebasestorage.app",
+  messagingSenderId: "133563964959",
+  appId: "1:133563964959:web:d3f183b721d540140f7f2a",
+  measurementId: "G-FY6CNVX6ZK"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        
+        // Beem Africa SMS API Configuration
+        const BEEM_API_KEY = "a987447781e3af2f";
+        const BEEM_API_SECRET_KEY = "MzgwZjEwOTdhNWZiMmI2ZTQ0MTY1MDM1ZmY1MDlmZGM3YzVmYjE4ZDg2NTUzZjU5NDRkMmE3MzZlNTVmN2EwOA==";
+        const BEEM_SENDER_NAME = "POWER NEST";
+        
+        // Global variables
+        let currentTab = 'pending';
+        let currentPayment = null;
+        let allPayments = [];
+        let currentAdmin = null;
+        let isProcessing = false; // To prevent multiple clicks
+        
+        // Function to show loading overlay
+        function showLoading(message) {
+            document.getElementById('loadingText').textContent = message;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        
+        // Function to hide loading overlay
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        
+        // Function to format amount
+        function formatAmount(amount) {
+            return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + ' TSh';
+        }
+        
+        // Function to format date
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+        
+        // Function to update stats counters
+        function updateStatsCounters() {
+            const pendingCount = allPayments.filter(p => p.status === 'pending').length;
+            const approvedCount = allPayments.filter(p => p.status === 'approved').length;
+            const rejectedCount = allPayments.filter(p => p.status === 'rejected').length;
+            
+            document.getElementById('pendingCount').textContent = pendingCount;
+            document.getElementById('approvedCount').textContent = approvedCount;
+            document.getElementById('rejectedCount').textContent = rejectedCount;
+        }
+        
+        // Function to render payments table
+        function renderPaymentsTable() {
+            const tableBody = document.getElementById('paymentsTableBody');
+            tableBody.innerHTML = '';
+            
+            const filteredPayments = allPayments.filter(p => p.status === currentTab);
+            
+            if (filteredPayments.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 30px; color: rgba(255,255,255,0.5);">
+                            No ${currentTab} payment requests found.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            filteredPayments.forEach(payment => {
+                const row = document.createElement('tr');
+                
+                // Get initials for avatar
+                const initials = payment.fullname 
+                    ? payment.fullname.split(' ').map(n => n[0]).join('').toUpperCase()
+                    : 'UU';
+                
+                row.innerHTML = `
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar">${initials}</div>
+                            <div>${payment.senderName || 'Unknown User'}</div>
+                        </div>
+                    </td>
+                    <td>${formatAmount(payment.amount)}</td>
+                    <td>${payment.network}</td>
+                    <td>${payment.phone}</td>
+                    <td>${payment.proofType === 'transaction_id' ? 'Transaction ID' : 'Screenshot'}</td>
+                    <td>${formatDate(payment.timestamp)}</td>
+                    <td>
+                        <span class="status-badge status-${payment.status}">
+                            ${payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            ${payment.status === 'pending' ? `
+                                <button class="btn btn-approve" data-id="${payment.id}" data-action="approve">
+                                    <i class="fas fa-check"></i>
+                                    <span class="button-text">Approve</span>
+                                    <span class="button-spinner"></span>
+                                </button>
+                                <button class="btn btn-reject" data-id="${payment.id}" data-action="reject">
+                                    <i class="fas fa-times"></i>
+                                    <span class="button-text">Reject</span>
+                                    <span class="button-spinner"></span>
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-delete" data-id="${payment.id}" data-action="delete">
+                                <i class="fas fa-trash"></i>
+                                <span class="button-text">Delete</span>
+                                <span class="button-spinner"></span>
+                            </button>
+                            <button class="btn btn-view" data-id="${payment.id}" data-action="view">
+                                <i class="fas fa-eye"></i>
+                                <span class="button-text">View</span>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Add event listeners to buttons
+            document.querySelectorAll('.action-buttons button').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (isProcessing) return; // Prevent multiple clicks
+                    
+                    const paymentId = this.getAttribute('data-id');
+                    const action = this.getAttribute('data-action');
+                    const payment = allPayments.find(p => p.id === paymentId);
+                    
+                    if (payment) {
+                        if (action === 'view') {
+                            showPaymentDetails(payment);
+                        } else if (action === 'delete') {
+                            showDeleteConfirmation(payment);
+                        } else {
+                            showActionConfirmation(payment, action);
+                        }
+                    }
+                });
+            });
+        }
+        
+        // Function to show payment details
+        function showPaymentDetails(payment) {
+            const modalContent = document.getElementById('detailsModalContent');
+            
+            modalContent.innerHTML = `
+                <div class="modal-info">
+                    <div class="modal-info-label">User Name</div>
+                    <div class="modal-info-value">${payment.senderName || 'Unknown User'}</div>
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-info-label">User Email</div>
+                    <div class="modal-info-value">${payment.userEmail || 'N/A'}</div>
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-info-label">Amount</div>
+                    <div class="modal-info-value">${formatAmount(payment.amount)}</div>
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-info-label">Network</div>
+                    <div class="modal-info-value">${payment.network}</div>
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-info-label">Phone Number</div>
+                    <div class="modal-info-value">${payment.phone}</div>
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-info-label">Proof Type</div>
+                    <div class="modal-info-value">${payment.proofType === 'transaction_id' ? 'Transaction ID' : 'Screenshot'}</div>
+                </div>
+                
+                ${payment.transactionId ? `
+                    <div class="modal-info">
+                        <div class="modal-info-label">Transaction ID</div>
+                        <div class="modal-info-value">${payment.transactionId}</div>
+                    </div>
+                ` : ''}
+                
+                ${payment.screenshotUrl ? `
+                    <div class="modal-info">
+                        <div class="modal-info-label">Screenshot</div>
+                        <div>
+                            <img src="${payment.screenshotUrl}" alt="Payment proof" class="proof-image">
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div class="modal-info">
+                    <div class="modal-info-label">Request Date</div>
+                    <div class="modal-info-value">${formatDate(payment.timestamp)}</div>
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-info-label">Status</div>
+                    <div class="modal-info-value">
+                        <span class="status-badge status-${payment.status}">
+                            ${payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('detailsModal').style.display = 'flex';
+        }
+        
+        // Function to show delete confirmation
+        function showDeleteConfirmation(payment) {
+            currentPayment = payment;
+            
+            const modalContent = document.getElementById('deleteModalContent');
+            
+            modalContent.innerHTML = `
+                <div class="modal-info">
+                    <div class="modal-info-label">User Name</div>
+                    <div class="modal-info-value">${payment.senderName || 'Unknown User'}</div>
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-info-label">Amount</div>
+                    <div class="modal-info-value">${formatAmount(payment.amount)}</div>
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-info-label">Network</div>
+                    <div class="modal-info-value">${payment.network}</div>
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-info-label">Status</div>
+                    <div class="modal-info-value">
+                        <span class="status-badge status-${payment.status}">
+                            ${payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                        </span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: rgba(255, 0, 85, 0.1); border-radius: 8px;">
+                    <p style="color: var(--danger);">
+                        <i class="fas fa-exclamation-circle"></i> 
+                        Are you sure you want to delete this payment request? This action cannot be undone.
+                    </p>
+                </div>
+            `;
+            
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+        
+        // Function to show action confirmation
+function showActionConfirmation(payment, action) {
+    currentPayment = payment;
+    
+    const modalTitle = document.getElementById('actionModalTitle');
+    const modalContent = document.getElementById('actionModalContent');
+    
+    if (action === 'approve') {
+        modalTitle.textContent = 'Approve Payment Request';
+        
+        modalContent.innerHTML = `
+            <div class="modal-info">
+                <div class="modal-info-label">User Name</div>
+                <div class="modal-info-value">${payment.senderName || 'Unknown User'}</div>
+            </div>
+            
+            <div class="modal-info">
+                <div class="modal-info-label">Amount</div>
+                <div class="modal-info-value">${formatAmount(payment.amount)}</div>
+            </div>
+            
+            <div class="modal-info">
+                <div class="modal-info-label">Network</div>
+                <div class="modal-info-value">${payment.network}</div>
+            </div>
+            
+            <div class="commission-info">
+                <h4 style="margin-bottom: 15px; color: var(--secondary);">Commission Distribution</h4>
+                
+                <div class="commission-level">
+                    <span>Level 1 (Direct Referrer):</span>
+                    <strong>${formatAmount(payment.amount * 0.10)}</strong>
+                </div>
+                
+                <div class="commission-level">
+                    <span>Level 2:</span>
+                    <strong>${formatAmount(payment.amount * 0.03)}</strong>
+                </div>
+                
+                <div class="commission-level">
+                    <span>Level 3:</span>
+                    <strong>${formatAmount(payment.amount * 0.01)}</strong>
+                </div>
+                
+                <div class="commission-level">
+                    <span>Level 4:</span>
+                    <strong>${formatAmount(payment.amount * 0.01)}</strong>
+                </div>
+                
+                <div class="commission-level">
+                    <span>Level 5:</span>
+                    <strong>${formatAmount(payment.amount * 0.01)}</strong>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: rgba(0, 255, 136, 0.1); border-radius: 8px;">
+                <p style="color: var(--success);">
+                    <i class="fas fa-exclamation-circle"></i> 
+                    This action will add ${formatAmount(payment.amount)} to the user's balance and distribute commissions to referrers.
+                </p>
+            </div>
+        `;
+        
+    } else if (action === 'reject') {
+        modalTitle.textContent = 'Reject Payment Request';
+        
+        modalContent.innerHTML = `
+            <div class="modal-info">
+                <div class="modal-info-label">User Name</div>
+                <div class="modal-info-value">${payment.senderName || 'Unknown User'}</div>
+            </div>
+            
+            <div class="modal-info">
+                <div class="modal-info-label">Amount</div>
+                <div class="modal-info-value">${formatAmount(payment.amount)}</div>
+            </div>
+            
+            <div class="modal-info">
+                <div class="modal-info-label">Network</div>
+                <div class="modal-info-value">${payment.network}</div>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: rgba(255, 0, 85, 0.1); border-radius: 8px;">
+                <p style="color: var(--danger);">
+                    <i class="fas fa-exclamation-circle"></i> 
+                    Are you sure you want to reject this payment request?
+                </p>
+            </div>
+        `;
+    }
+    
+    document.getElementById('actionModal').style.display = 'flex';
+}
+        
+        // Function to show button spinner
+        function showButtonSpinner(button, show) {
+            const spinner = button.querySelector('.button-spinner');
+            const text = button.querySelector('.button-text');
+            
+            if (show) {
+                spinner.style.display = 'inline-block';
+                text.textContent = 'Processing...';
+                button.disabled = true;
+            } else {
+                spinner.style.display = 'none';
+                if (button.classList.contains('btn-approve')) {
+                    text.textContent = 'Approve';
+                } else if (button.classList.contains('btn-reject')) {
+                    text.textContent = 'Reject';
+                } else if (button.classList.contains('btn-delete')) {
+                    text.textContent = 'Delete';
+                }
+                button.disabled = false;
+            }
+        }
+        
+        /// Function to send SMS using Beem Africa API - FIXED VERSION
+async function sendSMS(phoneNumber, message) {
+    try {
+        // Format phone number for Beem API
+        const formattedPhone = formatPhoneNumber(phoneNumber);
+        
+        console.log(`Sending SMS to formatted number: ${formattedPhone}`);
+        
+        const credentials = btoa(BEEM_API_KEY + ':' + BEEM_API_SECRET_KEY);
+        
+        const response = await fetch('https://apisms.beem.africa/v1/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic ' + credentials
+            },
+            body: JSON.stringify({
+                source_addr: BEEM_SENDER_NAME,
+                schedule_time: '',
+                encoding: 0,
+                message: message,
+                recipients: [
+                    {
+                        recipient_id: 1,
+                        dest_addr: formattedPhone
+                    }
+                ]
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('SMS sending failed:', errorText);
+            throw new Error(`SMS API error: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log('SMS sent successfully:', result);
+        return true;
+        
+    } catch (error) {
+        console.error('Error sending SMS:', error);
+        throw error;
+    }
+}
+        
+        // Function to update user balance with deposited amount
+        function updateUserBalanceWithDeposit(userId, amount) {
+            return database.ref(`users/${userId}`).transaction((userData) => {
+                if (!userData) return userData;
+                
+                // Update balance by adding the deposited amount
+                userData.balance = (userData.balance || 0) + amount;
+                userData.deposited = (userData.deposited || 0) + amount;
+                return userData;
+            });
+        }
+
+        /// Process commissions for referrers (updated with level 5)
+async function processCommissions(userId, amount) {
+    try {
+        // Validate amount
+        const paymentAmount = parseFloat(amount);
+        if (isNaN(paymentAmount)) {
+            throw new Error('Invalid payment amount for commissions');
+        }
+
+        // Get user data
+        const userSnapshot = await database.ref(`users/${userId}`).once('value');
+        const user = userSnapshot.val();
+        
+        if (!user || !user.referrer) {
+            console.log('No referrer found - skipping commissions');
+            return; // No referrer, no commissions
+        }
+        
+        const referrerId = user.referrer;
+        
+        // Calculate commissions based on new structure
+        const level1Commission = paymentAmount * 0.10;  // 10%
+        const level2Commission = paymentAmount * 0.03;  // 3%
+        const level3Commission = paymentAmount * 0.01;  // 1%
+        const level4Commission = paymentAmount * 0.01;  // 1%
+        const level5Commission = paymentAmount * 0.01;  // 1%
+        
+        console.log(`Processing commissions for payment: ${paymentAmount}`);
+
+        // Update level1 (direct referrer)
+        await database.ref(`users/${referrerId}`).transaction((userData) => {
+            if (!userData) return userData;
+            
+            // Update commissions
+            if (!userData.commissions) userData.commissions = {};
+            userData.commissions.level1 = (userData.commissions.level1 || 0) + level1Commission;
+            
+            // Update balance
+            userData.balance = (userData.balance || 0) + level1Commission;
+            
+            // Update totalEarnings
+            userData.totalEarnings = (userData.totalEarnings || 0) + level1Commission;
+            
+            return userData;
+        });
+        
+        // Get level1 referrer data
+        const level1Snapshot = await database.ref(`users/${referrerId}`).once('value');
+        const level1Data = level1Snapshot.val();
+        
+        if (level1Data?.referrer) {
+            const level2Id = level1Data.referrer;
+            
+            // Update level2
+            await database.ref(`users/${level2Id}`).transaction((userData) => {
+                if (!userData) return userData;
+                
+                // Update commissions
+                if (!userData.commissions) userData.commissions = {};
+                userData.commissions.level2 = (userData.commissions.level2 || 0) + level2Commission;
+                
+                // Update balance
+                userData.balance = (userData.balance || 0) + level2Commission;
+                
+                // Update totalEarnings
+                userData.totalEarnings = (userData.totalEarnings || 0) + level2Commission;
+                
+                return userData;
+            });
+            
+            // Get level2 referrer data
+            const level2Snapshot = await database.ref(`users/${level2Id}`).once('value');
+            const level2Data = level2Snapshot.val();
+            
+            if (level2Data?.referrer) {
+                const level3Id = level2Data.referrer;
+                
+                // Update level3
+                await database.ref(`users/${level3Id}`).transaction((userData) => {
+                    if (!userData) return userData;
+                    
+                    // Update commissions
+                    if (!userData.commissions) userData.commissions = {};
+                    userData.commissions.level3 = (userData.commissions.level3 || 0) + level3Commission;
+                    
+                    // Update balance
+                    userData.balance = (userData.balance || 0) + level3Commission;
+                    
+                    // Update totalEarnings
+                    userData.totalEarnings = (userData.totalEarnings || 0) + level3Commission;
+                    
+                    return userData;
+                });
+                
+                // Get level3 referrer data
+                const level3Snapshot = await database.ref(`users/${level3Id}`).once('value');
+                const level3Data = level3Snapshot.val();
+                
+                if (level3Data?.referrer) {
+                    const level4Id = level3Data.referrer;
+                    
+                    // Update level4
+                    await database.ref(`users/${level4Id}`).transaction((userData) => {
+                        if (!userData) return userData;
+                        
+                        // Update commissions
+                        if (!userData.commissions) userData.commissions = {};
+                        userData.commissions.level4 = (userData.commissions.level4 || 0) + level4Commission;
+                        
+                        // Update balance
+                        userData.balance = (userData.balance || 0) + level4Commission;
+                        
+                        // Update totalEarnings
+                        userData.totalEarnings = (userData.totalEarnings || 0) + level4Commission;
+                        
+                        return userData;
+                    });
+                    
+                    // Get level4 referrer data
+                    const level4Snapshot = await database.ref(`users/${level4Id}`).once('value');
+                    const level4Data = level4Snapshot.val();
+                    
+                    if (level4Data?.referrer) {
+                        const level5Id = level4Data.referrer;
+                        
+                        // Update level5
+                        await database.ref(`users/${level5Id}`).transaction((userData) => {
+                            if (!userData) return userData;
+                            
+                            // Update commissions
+                            if (!userData.commissions) userData.commissions = {};
+                            userData.commissions.level5 = (userData.commissions.level5 || 0) + level5Commission;
+                            
+                            // Update balance
+                            userData.balance = (userData.balance || 0) + level5Commission;
+                            
+                            // Update totalEarnings
+                            userData.totalEarnings = (userData.totalEarnings || 0) + level5Commission;
+                            
+                            return userData;
+                        });
+                    }
+                }
+            }
+        }
+        
+        console.log('Commissions processed successfully');
+    } catch (error) {
+        console.error("Error processing commissions:", error);
+        throw error;
+    }
+}
+        
+        // Function to process payment action
+async function processPaymentAction(action) {
+    if (!currentPayment || isProcessing) return;
+    
+    isProcessing = true;
+    showLoading(`${action === 'approved' ? 'Approving' : 'Rejecting'} payment...`);
+    
+    try {
+        // Update payment status
+        await database.ref(`payments/${currentPayment.id}/status`).set(action);
+        
+        // If approving, update user balance and process commissions
+        if (action === 'approved') {
+            // Update user balance
+            await updateUserBalanceWithDeposit(currentPayment.userId, currentPayment.amount);
+            
+            // Process commissions
+            await processCommissions(currentPayment.userId, currentPayment.amount);
+            
+            // Send SMS notification to user
+            const smsMessage = `Habari ${currentPayment.fullname}, malipo yako ya ${formatAmount(currentPayment.amount)} yamethibitishwa. Akaunti yako imeboreshwa kikamilifu. Asante kwa kutumia huduma zetu.`;
+            
+            try {
+                const smsSent = await sendSMS(currentPayment.phone, smsMessage);
+                
+                if (!smsSent) {
+                    console.warn('SMS notification failed to send, but payment was processed successfully');
+                }
+            } catch (smsError) {
+                console.warn('SMS notification failed to send, but payment was processed successfully', smsError);
+            }
+        } else if (action === 'rejected') {
+            // Send rejection SMS
+            const smsMessage = `Habari ${currentPayment.fullname}, ombi lako la malipo la ${formatAmount(currentPayment.amount)} limekataliwa. Wasiliana na usaidizi wa wateja kwa maelezo zaidi.`;
+            
+            try {
+                const smsSent = await sendSMS(currentPayment.phone, smsMessage);
+                
+                if (!smsSent) {
+                    console.warn('SMS notification failed to send');
+                }
+            } catch (smsError) {
+                console.warn('SMS notification failed to send', smsError);
+            }
+        }
+        
+        document.getElementById('actionModal').style.display = 'none';
+        
+        // Show success message
+        showNotification(`Payment request ${action} successfully!`, 'success');
+        
+    } catch (error) {
+        console.error('Error processing payment:', error);
+        showNotification('Error processing payment. Please try again.', 'error');
+    } finally {
+        isProcessing = false;
+        hideLoading();
+    }
+}
+        
+        // Function to delete a payment
+async function deletePayment() {
+    if (!currentPayment || isProcessing) return;
+    
+    isProcessing = true;
+    showLoading('Deleting payment...');
+    
+    try {
+        // Delete the payment from database
+        await database.ref(`payments/${currentPayment.id}`).remove();
+        
+        document.getElementById('deleteModal').style.display = 'none';
+        
+        // Show success message
+        showNotification('Payment request deleted successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error deleting payment:', error);
+        showNotification('Error deleting payment. Please try again.', 'error');
+    } finally {
+        isProcessing = false;
+        hideLoading();
+    }
+}
+        
+        // Function to show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            let icon = '';
+            if (type === 'success') icon = '<i class="fas fa-check-circle"></i>';
+            else if (type === 'error') icon = '<i class="fas fa-exclamation-circle"></i>';
+            else if (type === 'warning') icon = '<i class="fas fa-exclamation-triangle"></i>';
+            
+            notification.innerHTML = `${icon}${message}`;
+            
+            const container = document.getElementById('notificationContainer');
+            container.appendChild(notification);
+            
+            // Remove notification after animation completes
+            setTimeout(() => {
+                notification.remove();
+            }, 3500);
+        }
+        
+        // Function to load all payment requests
+        async function loadPaymentRequests() {
+            showLoading('Loading payment requests...');
+            
+            try {
+                const snapshot = await database.ref('payments').orderByChild('timestamp').once('value');
+                const payments = [];
+                
+                snapshot.forEach(childSnapshot => {
+                    payments.push({
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+                
+                // Sort by timestamp (newest first)
+                allPayments = payments.sort((a, b) => b.timestamp - a.timestamp);
+                
+                updateStatsCounters();
+                renderPaymentsTable();
+                
+                hideLoading();
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error loading payment requests:', error);
+            }
+        }
+
+        // Function to format phone number for Beem API
+function formatPhoneNumber(phoneNumber) {
+    // Remove any non-digit characters first
+    let cleaned = phoneNumber.replace(/\D/g, '');
+    
+    // Check if the number starts with 0 (like 07...)
+    if (cleaned.startsWith('0')) {
+        cleaned = '255' + cleaned.substring(1);
+    } 
+    // If it starts with 255, keep it as is
+    else if (!cleaned.startsWith('255')) {
+        cleaned = '255' + cleaned;
+    }
+    
+    return cleaned;
+}
+        
+        // Function to check if user has admin role
+        async function checkAdminRole(user) {
+            try {
+                const snapshot = await database.ref(`users/${user.uid}/role`).once('value');
+                return snapshot.val() === 'admin';
+            } catch (error) {
+                console.error('Error checking admin role:', error);
+                return false;
+            }
+        }
+        
+        // Function to handle logout
+        async function handleLogout() {
+            showLoading('Logging out...');
+            
+            try {
+                await auth.signOut();
+                currentAdmin = null;
+                document.getElementById('adminPanel').style.display = 'none';
+                document.getElementById('accessDenied').style.display = 'flex';
+                
+                // Remove real-time listeners
+                database.ref('payments').off();
+                
+                hideLoading();
+                
+            } catch (error) {
+                hideLoading();
+                showNotification('Logout failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Initialize when page loads
+        window.onload = () => {
+            // Set up logout button
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+            
+            // Set up login redirect button
+            document.getElementById('loginRedirectBtn').addEventListener('click', function() {
+                window.location.href = 'login.html';
+            });
+            
+            // Set up tab click handlers
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    currentTab = this.getAttribute('data-tab');
+                    renderPaymentsTable();
+                });
+            });
+            
+            // Set up modal close handlers
+            document.getElementById('closeActionModal').addEventListener('click', function() {
+                document.getElementById('actionModal').style.display = 'none';
+            });
+            
+            document.getElementById('closeDeleteModal').addEventListener('click', function() {
+                document.getElementById('deleteModal').style.display = 'none';
+            });
+            
+            document.getElementById('closeDetailsModal').addEventListener('click', function() {
+                document.getElementById('detailsModal').style.display = 'none';
+            });
+            
+            document.getElementById('closeDetailsBtn').addEventListener('click', function() {
+                document.getElementById('detailsModal').style.display = 'none';
+            });
+            
+            document.getElementById('cancelActionBtn').addEventListener('click', function() {
+                document.getElementById('actionModal').style.display = 'none';
+            });
+            
+            document.getElementById('cancelDeleteBtn').addEventListener('click', function() {
+                document.getElementById('deleteModal').style.display = 'none';
+            });
+            
+            // Set up action confirmation handler
+            document.getElementById('confirmActionBtn').addEventListener('click', function() {
+                const action = document.getElementById('actionModalTitle').textContent.includes('Approve') ? 'approved' : 'rejected';
+                processPaymentAction(action);
+            });
+            
+            // Set up delete confirmation handler
+            document.getElementById('confirmDeleteBtn').addEventListener('click', deletePayment);
+            
+            // Check if user is already logged in and has admin role
+            auth.onAuthStateChanged(async user => {
+                if (user) {
+                    showLoading('Checking admin privileges...');
+                    
+                    try {
+                        const isAdmin = await checkAdminRole(user);
+                        
+                        if (isAdmin) {
+                            currentAdmin = user;
+                            document.getElementById('adminName').textContent = user.email;
+                            document.getElementById('adminPanel').style.display = 'flex';
+                            document.getElementById('accessDenied').style.display = 'none';
+                            
+                            // Load payment requests
+                            loadPaymentRequests();
+                            
+                            // Set up real-time listener for new requests
+                            database.ref('payments').on('child_changed', () => {
+                                loadPaymentRequests();
+                            });
+                            
+                            database.ref('payments').on('child_added', () => {
+                                loadPaymentRequests();
+                            });
+                            
+                            database.ref('payments').on('child_removed', () => {
+                                loadPaymentRequests();
+                            });
+                        } else {
+                            document.getElementById('adminPanel').style.display = 'none';
+                            document.getElementById('accessDenied').style.display = 'flex';
+                        }
+                        
+                        hideLoading();
+                        
+                    } catch (error) {
+                        hideLoading();
+                        console.error('Error checking admin status:', error);
+                        document.getElementById('adminPanel').style.display = 'none';
+                        document.getElementById('accessDenied').style.display = 'flex';
+                    }
+                } else {
+                    // User is not logged in
+                    document.getElementById('adminPanel').style.display = 'none';
+                    document.getElementById('accessDenied').style.display = 'flex';
+                }
+            });
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Customer Support • CLASSIC MAXIMIZE</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #e5ddd5; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* WhatsApp-style chat header */
+        .chat-header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 60px;
+            background: #075e54;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .chat-header .back-btn {
+            color: white;
+            font-size: 24px;
+            margin-right: 16px;
+            text-decoration: none;
+        }
+        .chat-header .avatar {
+            width: 40px; height: 40px;
+            background: #128c7e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .chat-header .chat-info { flex: 1; margin-left: 12px; }
+        .chat-header .chat-title { font-weight: 600; font-size: 16px; }
+        .chat-header .chat-status { font-size: 13px; opacity: 0.9; }
+        .chat-header {
+            flex: 0 0 60px;
+        }
+        
+        /* Messages area - WhatsApp style */
+        .chat-messages {
+            flex: 1;
+            padding: 16px;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23e5ddd5" width="100" height="100"/><path d="M0 50 Q25 45 50 50 T100 50" stroke="%23d4cec4" fill="none" stroke-width="0.5" opacity="0.5"/></svg>');
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        #messagesContainer {
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            max-width: 75%;
+            margin-bottom: 8px;
+            animation: msgIn 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message.user-msg {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+        .message.admin-msg {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+        .message-bubble {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 15px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            position: relative;
+        }
+        .message.user-msg .message-bubble {
+            background: #dcf8c6;
+            color: #000;
+            border-top-right-radius: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .message.admin-msg .message-bubble {
+            background: white;
+            color: #111;
+            border-top-left-radius: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .message-time {
+            font-size: 11px;
+            color: #667781;
+            text-align: right;
+            margin-top: 2px;
+        }
+        .message.admin-msg .message-sender {
+            font-size: 11px;
+            color: #075e54;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        /* Input area */
+        .chat-input-area {
+            flex: 0 0 auto;
+            padding: 10px 12px;
+            background: #f0f2f5;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            z-index: 999;
+            border-top: 1px solid #e0e0e0;
+            overflow: hidden;
+        }
+        .emoji-btn {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            color: #25d366;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .emoji-btn:hover { background: #f0f2f5; }
+        
+        /* Emoji picker */
+        .emoji-picker {
+            position: absolute;
+            bottom: 70px;
+            left: 12px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px;
+            display: none;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            z-index: 101;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            max-width: 280px;
+        }
+        .emoji-picker.show { display: grid; }
+        .emoji-picker .emoji {
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            text-align: center;
+        }
+        .emoji-picker .emoji:hover { background: #f0f2f5; }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 24px;
+            font-size: 15px;
+            background: white;
+            outline: none;
+            max-height: 60px;
+            resize: none;
+        }
+        .send-btn {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: #25d366;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .send-btn:hover { background: #20bd5a; }
+        .send-btn:disabled { background: #ccc; cursor: not-allowed; }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #667781;
+        }
+        .empty-state i { font-size: 64px; margin-bottom: 16px; color: #25d366; opacity: 0.6; }
+        .empty-state p { font-size: 16px; margin-bottom: 8px; }
+        .empty-state small { font-size: 13px; }
+        
+        /* Copyright footer - WhatsApp style */
+        .chat-footer {
+            display: none;
+        .chat-footer a { color: #25d366; text-decoration: none; }
+        
+        .login-prompt {
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .login-prompt a {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: #075e54;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-header">
+        <a href="dashboard.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <div class="avatar"><i class="fas fa-headset"></i></div>
+        <div class="chat-info">
+            <div class="chat-title">Customer Support</div>
+            <div class="chat-status">We typically reply within minutes</div>
+        </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        <div class="empty-state" id="emptyState">
+            <i class="fas fa-comments"></i>
+            <p>Start a conversation</p>
+            <small>Send a message and our team will respond as soon as possible.</small>
+        </div>
+        <div id="messagesContainer"></div>
+    </div>
+
+    <div class="chat-footer">
+        © 2026 CLASSIC MAXIMIZE PAY. <a href="#">Privacy</a> & <a href="#">Terms</a>
+    </div>
+
+    <div class="chat-input-area" id="inputArea" style="display:none;">
+        <button class="emoji-btn" id="emojiBtn" title="Emoji"><i class="fas fa-smile"></i></button>
+        <div class="emoji-picker" id="emojiPicker">
+            <span class="emoji">😀</span>
+            <span class="emoji">😂</span>
+            <span class="emoji">😍</span>
+            <span class="emoji">😘</span>
+            <span class="emoji">😭</span>
+            <span class="emoji">😱</span>
+            <span class="emoji">🤔</span>
+            <span class="emoji">👌</span>
+            <span class="emoji">👍</span>
+            <span class="emoji">👎</span>
+            <span class="emoji">🙏</span>
+            <span class="emoji">💯</span>
+            <span class="emoji">🎉</span>
+            <span class="emoji">❤️</span>
+            <span class="emoji">💔</span>
+            <span class="emoji">⭐</span>
+            <span class="emoji">✅</span>
+            <span class="emoji">❌</span>
+            <span class="emoji">🔥</span>
+            <span class="emoji">💰</span>
+            <span class="emoji">💸</span>
+            <span class="emoji">💳</span>
+            <span class="emoji">🏆</span>
+            <span class="emoji">🎁</span>
+            <span class="emoji">🚀</span>
+            <span class="emoji">✨</span>
+        </div>
+        <textarea class="chat-input" id="messageInput" placeholder="Type a message..." rows="1"></textarea>
+        <button class="send-btn" id="sendBtn" title="Send"><i class="fas fa-paper-plane"></i></button>
+    </div>
+
+    <div class="login-prompt" id="loginPrompt">
+        <p>Please log in to chat with our support team.</p>
+        <a href="login.html">Log in</a>
+        <span style="margin: 0 8px;">|</span>
+        <a href="index.html">Sign up</a>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="support.js"></script>
+    <script src="js/support-bubble.js"></script>
+</body>
+</html>

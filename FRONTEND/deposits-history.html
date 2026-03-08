@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit History - CLASSIC MAXIMIZE</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Orbitron:wght@400;500;700&display=swap');
+        
+        :root {
+            --gold: #FFD700;
+            --gold-light: rgba(255, 215, 0, 0.8);
+            --gold-dark: rgba(255, 215, 0, 0.3);
+            --black: #0a0a0a;
+            --black-light: rgba(10, 10, 10, 0.9);
+            --accent: #FF6B00;
+            --glass-bg: rgba(10, 10, 10, 0.85);
+            --glass-border: rgba(255, 215, 0, 0.2);
+            --success: #00ff88;
+            --warning: #ffcc00;
+            --error: #ff3333;
+            --info: #0096ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #1a1a1a 100%);
+            color: #fff;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-particles {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: var(--gold);
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: floatUp 20s infinite linear;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) translateX(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.7; }
+            90% { opacity: 0.7; }
+            100% { transform: translateY(-100px) translateX(100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* Main Container */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Header - Enhanced */
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 15px 40px rgba(0, 0, 0, 0.6),
+                0 0 0 1px var(--glass-border),
+                inset 0 0 20px rgba(255, 215, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), var(--accent), transparent);
+            animation: slide 4s infinite;
+            z-index: 2;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .app-logo {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--gold), var(--accent));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--black);
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .app-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--gold), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 1.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: var(--gold);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 12px 25px;
+            border-radius: 15px;
+            border: 2px solid var(--glass-border);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background: rgba(255, 215, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-links a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: var(--gold);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 215, 0, 0.3);
+        }
+
+        .nav-links a:hover::before {
+            left: 100%;
+        }
+
+        /* Page Title */
+        .page-title {
+            text-align: center;
+            margin: 30px 0 40px;
+            position: relative;
+        }
+
+        .page-title h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 42px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--gold), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .page-title p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Total Deposits Box - Enhanced */
+        .total-deposits-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 40px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 20px 50px rgba(0, 0, 0, 0.6),
+                inset 0 0 30px rgba(255, 215, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .total-deposits-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--gold), var(--accent));
+            animation: progressBar 4s infinite linear;
+        }
+
+        @keyframes progressBar {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .total-deposits-box h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: var(--gold);
+            font-weight: 600;
+            position: relative;
+            z-index: 2;
+        }
+
+        .total-amount {
+            font-size: 64px;
+            font-weight: 800;
+            color: var(--gold);
+            position: relative;
+            z-index: 2;
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+            margin: 20px 0;
+        }
+
+        .total-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Stats Cards Grid - Enhanced */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, auto);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+        }
+
+        .stat-card.total::before {
+            background: linear-gradient(90deg, var(--gold), var(--accent));
+        }
+
+        .stat-card.approved::before {
+            background: linear-gradient(90deg, var(--success), #00cc77);
+        }
+
+        .stat-card.pending::before {
+            background: linear-gradient(90deg, var(--warning), #ffaa00);
+        }
+
+        .stat-card.rejected::before {
+            background: linear-gradient(90deg, var(--error), #ff5500);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--gold);
+            box-shadow: 
+                0 25px 60px rgba(255, 215, 0, 0.25),
+                inset 0 0 40px rgba(255, 215, 0, 0.1);
+        }
+
+        .stat-icon {
+            font-size: 42px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-card.total .stat-icon {
+            color: var(--gold);
+        }
+
+        .stat-card.approved .stat-icon {
+            color: var(--success);
+        }
+
+        .stat-card.pending .stat-icon {
+            color: var(--warning);
+        }
+
+        .stat-card.rejected .stat-icon {
+            color: var(--error);
+        }
+
+        .stat-number {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            font-family: 'Orbitron', sans-serif;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-card.total .stat-number {
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .stat-card.approved .stat-number {
+            color: var(--success);
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .stat-card.pending .stat-number {
+            color: var(--warning);
+            text-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+        }
+
+        .stat-card.rejected .stat-number {
+            color: var(--error);
+            text-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            font-weight: 500;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Deposits Table - Enhanced */
+        .table-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            overflow: hidden;
+            margin-bottom: 40px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            position: relative;
+        }
+
+        .table-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--gold), var(--accent));
+            z-index: 2;
+        }
+
+        .deposits-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .deposits-table thead {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 107, 0, 0.1));
+            backdrop-filter: blur(10px);
+        }
+
+        .deposits-table th {
+            padding: 25px 20px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 16px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            letter-spacing: 1px;
+        }
+
+        .deposits-table th:first-child {
+            padding-left: 30px;
+        }
+
+        .deposits-table th:last-child {
+            padding-right: 30px;
+        }
+
+        .deposits-table td {
+            padding: 22px 20px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+            vertical-align: middle;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 15px;
+        }
+
+        .deposits-table td:first-child {
+            padding-left: 30px;
+        }
+
+        .deposits-table td:last-child {
+            padding-right: 30px;
+        }
+
+        .deposits-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .deposits-table tbody tr {
+            transition: all 0.3s;
+            background: transparent;
+        }
+
+        .deposits-table tbody tr:hover {
+            background: rgba(255, 215, 0, 0.05);
+            transform: translateX(10px);
+        }
+
+        .status-badge {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 700;
+            display: inline-block;
+            text-align: center;
+            min-width: 120px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+
+        .status-approved {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-pending {
+            background: rgba(255, 204, 0, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(255, 204, 0, 0.3);
+        }
+
+        .status-rejected {
+            background: rgba(255, 51, 51, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(255, 51, 51, 0.3);
+        }
+
+        .deposits-table tbody tr:hover .status-badge {
+            transform: scale(1.05);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-icon {
+            font-size: 80px;
+            color: rgba(255, 215, 0, 0.3);
+            margin-bottom: 30px;
+            animation: pulse 3s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
+        .empty-state h3 {
+            color: var(--gold);
+            font-size: 28px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .empty-state p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            margin-bottom: 30px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+
+        .action-button {
+            background: linear-gradient(135deg, var(--gold), var(--accent));
+            color: var(--black);
+            text-decoration: none;
+            padding: 16px 35px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .action-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 215, 0, 0.6);
+        }
+
+        .action-button:hover::before {
+            left: 100%;
+        }
+
+        /* Loading Overlay - Enhanced */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .spinner {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .spinner::after,
+        .spinner::before {
+            content: '';  
+            box-sizing: border-box;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: var(--gold);
+            position: absolute;
+            left: 0;
+            top: 0;
+            animation: spinner-anim 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+        }
+
+        .spinner::after {
+            border-top-color: var(--accent);
+            animation-delay: 0.2s;
+        }
+
+        @keyframes spinner-anim {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            50% {
+                transform: rotate(180deg) scale(1.1);
+            }
+            100% {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+
+        .loading-text {
+            color: var(--gold);
+            margin-top: 25px;
+            font-size: 20px;
+            letter-spacing: 1px;
+            animation: pulseText 2s infinite;
+        }
+
+        @keyframes pulseText {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        /* Notification Container - Enhanced */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 400px;
+        }
+
+        .notification {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 20px 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            animation: slideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-left: 5px solid;
+            border: 1px solid var(--glass-border);
+        }
+
+        .notification.success {
+            border-left-color: var(--success);
+        }
+
+        .notification.error {
+            border-left-color: var(--error);
+        }
+
+        .notification.warning {
+            border-left-color: var(--warning);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .notification i {
+            font-size: 24px;
+        }
+
+        .notification.success i {
+            color: var(--success);
+        }
+
+        .notification.error i {
+            color: var(--error);
+        }
+
+        .notification.warning i {
+            color: var(--warning);
+        }
+
+        /* Footer - Enhanced */
+        footer {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+            border-radius: 25px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--accent));
+        }
+
+        footer p {
+            font-size: 16px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 24px) {
+            .dashboard-container {
+                padding: 15px;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, auto);
+                gap: 20px;
+            }
+            
+            .total-amount {
+                font-size: 56px;
+            }
+            
+            .page-title h1 {
+                font-size: 36px;
+            }
+        }
+
+        @media (max-width: 68px) {
+            .header-content {
+                flex-direction: row;
+                gap: 20px;
+            }
+            
+            .nav-links {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .nav-links a {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            
+            .total-deposits-box {
+                padding: 30px 20px;
+            }
+            
+            .total-amount {
+                font-size: 48px;
+            }
+            
+            .page-title h1 {
+                font-size: 32px;
+            }
+            
+            .page-title p {
+                font-size: 16px;
+            }
+            
+            .stat-card {
+                padding: 25px 20px;
+            }
+            
+            .stat-number {
+                font-size: 42px;
+            }
+            
+            .stat-icon {
+                font-size: 36px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-container {
+                padding: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .app-name {
+                font-size: 24px;
+            }
+            
+            .nav-links {
+                gap: 10px;
+            }
+            
+            .nav-links a {
+                padding: 8px 15px;
+                font-size: 13px;
+            }
+            
+            .page-title h1 {
+                font-size: 28px;
+            }
+            
+            .total-amount {
+                font-size: 40px;
+            }
+            
+            .deposits-table {
+                min-width: 100%;
+                font-size: 14px;
+            }
+            
+            .deposits-table th,
+            .deposits-table td {
+                padding: 15px 10px;
+            }
+            
+            .deposits-table th:first-child,
+            .deposits-table td:first-child {
+                padding-left: 15px;
+            }
+            
+            .deposits-table th:last-child,
+            .deposits-table td:last-child {
+                padding-right: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background Particles -->
+    <div class="bg-particles" id="bgParticles"></div>
+    
+    <!-- Notification Container -->
+    <div class="notification-container" id="notificationContainer"></div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Loading...</div>
+    </div>
+    
+    <!-- Main Dashboard Container -->
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="app-brand">
+                    <div class="app-logo">NH</div>
+                    <div class="app-name">CLASSIC MAXIMIZE</div>
+                </div>
+                
+                <nav class="nav-links">
+                    <a href="dashboard.html">
+                        <i class="fas fa-home"></i>
+                        Dashboard
+                    </a>
+                    <a href="#" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </nav>
+            </div>
+        </header>
+        
+        <!-- Page Title -->
+        <div class="page-title">
+            <h1>Deposit History</h1>
+            <p></p>
+        </div>
+        
+        <!-- Total Deposits Box -->
+        <div class="total-deposits-box">
+            <h2>Total Deposits</h2>
+            <div class="total-amount" id="totalDeposits">BWP 0</div>
+            <div class="total-label">Tota Amount</div>
+        </div>
+        
+        <!-- Stats Cards - 2x2 Grid -->
+        <div class="stats-container">
+            <!-- Card 1: Total Deposits Count -->
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="stat-number" id="totalCount">0</div>
+                <div class="stat-label">Total Deposits</div>
+            </div>
+            
+            <!-- Card 2: Approved Deposits -->
+            <div class="stat-card approved">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-number" id="approvedCount">0</div>
+                <div class="stat-label"> Approved Deposits</div>
+            </div>
+            
+            <!-- Card 3: Pending Deposits -->
+            <div class="stat-card pending">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-number" id="pendingCount">0</div>
+                <div class="stat-label">Deposit</div>
+            </div>
+            
+            <!-- Card 4: Rejected Deposits -->
+            <div class="stat-card rejected">
+                <div class="stat-icon">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-number" id="rejectedCount">0</div>
+                <div class="stat-label"> Rejected Deposits</div>
+            </div>
+        </div>
+        
+        <!-- Deposits Table -->
+        <div class="table-container">
+            <table class="deposits-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Network</th>
+                        <th>Amount</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody id="depositsTableBody">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 80px;">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                </div>
+                                <h3>Loading Deposits</h3>
+                                <p>Loading, Please wait...</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 CLASSIC MAXIMIZE. All Rights Reserved.</p>
+    </footer>
+
+    <!-- JavaScript Code -->
+    <script src="deposits-history.js"></script>
+</body>
+</html>

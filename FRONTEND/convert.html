@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convert Gift Points</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #000000;
+            --secondary: #00ff88;
+            --accent: #ffd700;
+            --dark: #0f0f1a;
+            --light: #f0f0ff;
+            --danger: #ff0055;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #000428, #004e92);
+            color: var(--light);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--secondary);
+            color: var(--secondary);
+            padding: 8px 15px;
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            font-size: 14px;
+            z-index: 100;
+        }
+        
+        .back-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateX(-3px);
+        }
+        
+        .converter-card {
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 20px;
+            padding: 25px;
+            border: 2px solid var(--secondary);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 100%;
+            margin: 15px 0;
+            max-height: calc(100vh - 30px);
+            overflow-y: auto;
+        }
+        
+        /* Hide scrollbar but allow scrolling */
+        .converter-card::-webkit-scrollbar {
+            width: 0;
+            background: transparent;
+        }
+        
+        .converter-icon {
+            font-size: 45px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+            animation: float 3s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .converter-card h1 {
+            background: linear-gradient(45deg, var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+        
+        .converter-card p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .warning-box {
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid var(--danger);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .warning-box i {
+            color: var(--danger);
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .warning-box h3 {
+            color: var(--danger);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .warning-box p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+        
+        .invest-now-btn {
+            background: linear-gradient(to right, var(--danger), #cc0044);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .invest-now-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(255, 0, 85, 0.3);
+        }
+        
+        .points-display {
+            background: rgba(0, 255, 136, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--secondary);
+        }
+        
+        .points-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 8px;
+        }
+        
+        .points-amount {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--secondary);
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+        }
+        
+        .conversion-rate {
+            background: rgba(255, 215, 0, 0.1);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--accent);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .conversion-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .conversion-item .points, 
+        .conversion-item .zmw {
+            font-weight: 600;
+        }
+        
+        .conversion-item .points {
+            color: var(--accent);
+        }
+        
+        .conversion-item .zmw {
+            color: var(--secondary);
+        }
+        
+        .equals {
+            font-size: 20px;
+            color: white;
+            margin: 0 5px;
+        }
+        
+        .conversion-form {
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            text-align: left;
+            margin-bottom: 6px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        }
+        
+        .input-group {
+            position: relative;
+            display: flex;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 15px;
+            outline: none;
+        }
+        
+        .input-group input:focus {
+            border-color: var(--secondary);
+        }
+        
+        .input-group input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .input-group .unit {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .conversion-result {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 16px;
+            border: 1px dashed var(--secondary);
+        }
+        
+        .conversion-result .amount {
+            color: var(--secondary);
+            font-weight: 600;
+            font-size: 20px;
+        }
+        
+        .convert-btn {
+            background: linear-gradient(45deg, var(--secondary), #00cc70);
+            color: #000;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 8px 15px rgba(0, 255, 136, 0.3);
+        }
+        
+        .convert-btn:hover:not(:disabled) {
+            transform: scale(1.03);
+            box-shadow: 0 12px 20px rgba(0, 255, 136, 0.4);
+        }
+        
+        .convert-btn:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 255, 136, 0.9);
+            color: #000;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+            font-size: 14px;
+            max-width: 300px;
+        }
+        
+        .notification.error {
+            background: rgba(255, 0, 85, 0.9);
+            color: white;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .loading {
+            display: none;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        
+        .spinner {
+            width: 35px;
+            height: 35px;
+            border: 3px solid rgba(0, 255, 136, 0.3);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Media query for very small screens */
+        @media (max-height: 700px) {
+            .converter-icon {
+                font-size: 35px;
+                margin-bottom: 10px;
+            }
+            
+            .converter-card h1 {
+                font-size: 20px;
+            }
+            
+            .points-amount {
+                font-size: 30px;
+            }
+            
+            .conversion-rate {
+                font-size: 13px;
+                padding: 10px;
+            }
+            
+            .converter-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" id="backBtn">
+        <i class="fas fa-arrow-left"></i>
+        Back to Tasks
+    </button>
+    
+    <div class="container">
+        <div class="converter-card">
+            <div class="converter-icon">
+                <i class="fas fa-exchange-alt"></i>
+            </div>
+            <h1>Convert Gift Points</h1>
+            <p>Exchange your gift points for BWP cash</p>
+            
+            <!-- Warning for users without investments -->
+            <div class="warning-box" id="noInvestmentWarning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>No Active Investments Found</h3>
+                <p>You need to have at least one active investment to convert gift points. This policy ensures that only active investors can benefit from point conversions.</p>
+                <button class="invest-now-btn" id="investNowBtn">
+                    <i class="fas fa-chart-line"></i>
+                    Invest Now
+                </button>
+            </div>
+            
+            <div class="points-display">
+                <div class="points-label">Available Gift Points</div>
+                <div class="points-amount" id="availablePoints">0</div>
+            </div>
+            
+            <div class="conversion-rate">
+                <div class="conversion-item">
+                    <span class="points">50 Gift Points</span>
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div class="equals">=</div>
+                <div class="conversion-item">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span class="zmw">1 BWP</span>
+                </div>
+            </div>
+            
+            <div class="conversion-form" id="conversionForm">
+                <div class="form-group">
+                    <label>Enter Gift Points to Convert:</label>
+                    <div class="input-group">
+                        <input type="number" id="pointsInput" min="50" step="50" placeholder="Minimum 50 points">
+                        <span class="unit">Points</span>
+                    </div>
+                </div>
+                
+                <div class="conversion-result">
+                    You will receive: <span class="amount" id="conversionResult">0 BWP</span>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            
+            <button class="convert-btn" id="convertBtn" disabled>
+                <i class="fas fa-exchange-alt"></i>
+                <span id="convertBtnText">Convert Now</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notificationText">Conversion successful!</span>
+    </div>
+    
+    <script src="convert.js"></script>
+</body>
+</html>

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - User Referrals | POWER NEST</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #000000;
+            --secondary: #ffd700;
+            --dark: #0f0f1a;
+            --light: #f0f0ff;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff0055;
+            --info: #0088ff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--primary);
+            color: var(--light);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        /* NOTIFICATION STYLES */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 350px;
+        }
+        
+        .notification {
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transform: translateX(120%);
+            animation: slideIn 0.5s forwards, fadeOut 0.5s forwards 3s;
+        }
+        
+        @keyframes slideIn {
+            to { transform: translateX(0); }
+        }
+        
+        @keyframes fadeOut {
+            to { opacity: 0; }
+        }
+        
+        .notification i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        
+        .notification.success {
+            background-color: var(--success);
+            color: #000;
+        }
+        
+        .notification.error {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .notification.warning {
+            background-color: var(--warning);
+            color: #000;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #101015, #0f0f1a);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 28px;
+        }
+        
+        .admin-info {
+            text-align: right;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .search-section {
+            background: rgba(110, 0, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid var(--primary);
+        }
+        
+        .search-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: var(--secondary);
+        }
+        
+        .search-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+        
+        .search-btn {
+            grid-column: span 3;
+            padding: 14px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        @media (max-width: 768px) {
+            .search-btn {
+                grid-column: span 1;
+            }
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(110, 0, 255, 0.4);
+        }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid var(--secondary);
+            text-align: center;
+        }
+        
+        .stat-card i {
+            font-size: 30px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+        
+        .stat-card h3 {
+            font-size: 16px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        .users-table-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+        
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .users-table th, .users-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .users-table th {
+            background: rgba(110, 0, 255, 0.2);
+            color: var(--secondary);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .users-table th:hover {
+            background: rgba(110, 0, 255, 0.3);
+        }
+        
+        .users-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 5px;
+        }
+        
+        .view-btn {
+            background: var(--info);
+            color: white;
+        }
+        
+        .referral-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .referral-badge.high {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+        }
+        
+        .referral-badge.medium {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+        }
+        
+        .referral-badge.low {
+            background: rgba(255, 0, 85, 0.2);
+            color: var(--danger);
+        }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1001;
+        }
+        
+        .spinner {
+            width: 70px;
+            height: 70px;
+            display: inline-block;
+            position: relative;
+        }
+        
+        .spinner::after,
+        .spinner::before {
+            content: '';  
+            box-sizing: border-box;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            position: absolute;
+            left: 0;
+            top: 0;
+            animation: spinner-anim 1s linear infinite;
+        }
+        
+        .spinner::after {
+            animation-delay: 0.1s;
+        }
+        
+        @keyframes spinner-anim {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+        
+        .loading-text {
+            color: white;
+            margin-top: 20px;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification Container -->
+    <div class="notification-container" id="notificationContainer"></div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Please Wait...</div>
+    </div>
+    
+    <div class="container">
+        <h1>Admin - User Referrals</h1>
+        
+        <div class="admin-info">
+            Logged in as Admin: <span id="adminEmail">Loading...</span> | 
+            <a href="#" onclick="logout()" style="color: var(--secondary); text-decoration: none;">Logout</a>
+        </div>
+        
+        <div class="search-section">
+            <h3 class="search-title">Search Users</h3>
+            <div class="search-form">
+                <div class="form-group">
+                    <label for="searchPhone">Phone Number</label>
+                    <input type="text" id="searchPhone" class="form-control" placeholder="Enter phone number">
+                </div>
+                
+                <div class="form-group">
+                    <label for="searchReferralCode">Referral Code</label>
+                    <input type="text" id="searchReferralCode" class="form-control" placeholder="Enter referral code">
+                </div>
+                
+                <div class="form-group">
+                    <label for="searchMinReferrals">Min Referrals</label>
+                    <input type="number" id="searchMinReferrals" class="form-control" placeholder="Minimum referrals" min="0">
+                </div>
+                
+                <button class="search-btn" onclick="searchUsers()">
+                    <i class="fas fa-search"></i> Search Users
+                </button>
+            </div>
+        </div>
+        
+        <div class="stats-cards">
+            <div class="stat-card">
+                <i class="fas fa-users"></i>
+                <h3>Total Users</h3>
+                <div class="value" id="totalUsers">0</div>
+            </div>
+            
+            <div class="stat-card">
+                <i class="fas fa-user-plus"></i>
+                <h3>Total Referrals</h3>
+                <div class="value" id="totalReferrals">0</div>
+            </div>
+            
+            <div class="stat-card">
+                <i class="fas fa-chart-line"></i>
+                <h3>Avg. Referrals per User</h3>
+                <div class="value" id="avgReferrals">0</div>
+            </div>
+            
+            <div class="stat-card">
+                <i class="fas fa-star"></i>
+                <h3>Top Referrer</h3>
+                <div class="value" id="topReferrer">-</div>
+            </div>
+        </div>
+        
+        <div class="users-table-container">
+            <h3 class="search-title">All Users with Referral Counts</h3>
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable('phone')">Phone <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable('referralCode')">Referral Code <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable('referralCount')">Total Referrals <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable('level1')">Level 1 <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable('level2')">Level 2 <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable('level3')">Level 3 <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable('level4')">Level 4 <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable('level5')">Level 5 <i class="fas fa-sort"></i></th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center;">Loading user data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIX3aQq3VEBq269Jdrk77CefNttqAR51s",
+  authDomain: "mozambique-newhope.firebaseapp.com",
+  databaseURL: "https://mozambique-newhope-default-rtdb.firebaseio.com",
+  projectId: "mozambique-newhope",
+  storageBucket: "mozambique-newhope.firebasestorage.app",
+  messagingSenderId: "133563964959",
+  appId: "1:133563964959:web:d3f183b721d540140f7f2a",
+  measurementId: "G-FY6CNVX6ZK"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        
+        // Current admin and selected user data
+        let currentAdmin = null;
+        let allUsers = [];
+        let sortField = 'referralCount';
+        let sortDirection = 'desc';
+        
+        // Function to show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            let icon = '';
+            if (type === 'success') icon = '<i class="fas fa-check-circle"></i>';
+            else if (type === 'error') icon = '<i class="fas fa-exclamation-circle"></i>';
+            else if (type === 'warning') icon = '<i class="fas fa-exclamation-triangle"></i>';
+            
+            notification.innerHTML = `${icon}${message}`;
+            
+            const container = document.getElementById('notificationContainer');
+            container.appendChild(notification);
+            
+            // Remove notification after animation completes
+            setTimeout(() => {
+                notification.remove();
+            }, 3500);
+        }
+        
+        // Function to show loading overlay
+        function showLoading(message) {
+            document.getElementById('loadingText').textContent = message;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        
+        // Function to hide loading overlay
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        
+        // Function to format amount
+        function formatAmount(amount) {
+            if (!amount) return "0";
+            return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        // Function to get referral badge class based on count
+        function getReferralBadgeClass(count) {
+            if (count >= 10) return 'referral-badge high';
+            if (count >= 5) return 'referral-badge medium';
+            return 'referral-badge low';
+        }
+        
+        // Function to count referrals correctly
+        function countReferrals(levelData) {
+            if (!levelData) return 0;
+            
+            // Check if it's an array
+            if (Array.isArray(levelData)) {
+                return levelData.length;
+            }
+            
+            // Check if it's an object
+            if (typeof levelData === 'object') {
+                return Object.keys(levelData).length;
+            }
+            
+            return 0;
+        }
+        
+        // Function to load all users with referral data
+        async function loadAllUsers() {
+            showLoading('Loading users and referral data...');
+            
+            try {
+                const usersRef = database.ref('users');
+                const snapshot = await usersRef.once('value');
+                
+                if (!snapshot.exists()) {
+                    hideLoading();
+                    showNotification('No users found in database', 'warning');
+                    document.getElementById('usersTableBody').innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center;">No users found in database</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                allUsers = [];
+                let totalReferrals = 0;
+                let topReferrer = { name: '', count: 0 };
+                
+                // Process each user
+                snapshot.forEach((childSnapshot) => {
+                    const userData = childSnapshot.val();
+                    const userId = childSnapshot.key;
+                    
+                    // Calculate referral counts from different levels
+                    const level1Count = countReferrals(userData.level1);
+                    const level2Count = countReferrals(userData.level2);
+                    const level3Count = countReferrals(userData.level3);
+                    const level4Count = countReferrals(userData.level4);
+                    const level5Count = countReferrals(userData.level5);
+                    
+                    const totalReferralCount = level1Count + level2Count + level3Count + level4Count + level5Count;
+                    totalReferrals += totalReferralCount;
+                    
+                    // Track top referrer
+                    if (totalReferralCount > topReferrer.count) {
+                        topReferrer = {
+                            name: userData.phone || `User (${userId.substring(0, 8)}...)`,
+                            count: totalReferralCount
+                        };
+                    }
+                    
+                    allUsers.push({
+                        id: userId,
+                        phone: userData.phone || 'N/A',
+                        referralCode: userData.referralCode || 'N/A',
+                        referralCount: totalReferralCount,
+                        level1: level1Count,
+                        level2: level2Count,
+                        level3: level3Count,
+                        level4: level4Count,
+                        level5: level5Count
+                    });
+                });
+                
+                // Update stats
+                document.getElementById('totalUsers').textContent = formatAmount(allUsers.length);
+                document.getElementById('totalReferrals').textContent = formatAmount(totalReferrals);
+                document.getElementById('avgReferrals').textContent = allUsers.length > 0 
+                    ? (totalReferrals / allUsers.length).toFixed(1) 
+                    : '0';
+                document.getElementById('topReferrer').textContent = `${topReferrer.name} (${topReferrer.count})`;
+                
+                // Display users
+                displayUsers(allUsers);
+                hideLoading();
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error loading user data:', error);
+                showNotification('Error loading user data: ' + error.message, 'error');
+                document.getElementById('usersTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center;">Error loading data. Please try again.</td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // Function to display users in the table
+        function displayUsers(users) {
+            const tableBody = document.getElementById('usersTableBody');
+            tableBody.innerHTML = '';
+            
+            if (users.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px;">
+                            No users found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Sort users based on current sort field and direction
+            const sortedUsers = [...users].sort((a, b) => {
+                let valueA = a[sortField];
+                let valueB = b[sortField];
+                
+                // Handle string comparison
+                if (typeof valueA === 'string') {
+                    valueA = valueA.toLowerCase();
+                    valueB = valueB.toLowerCase();
+                }
+                
+                if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
+                if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            sortedUsers.forEach(user => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${user.phone}</td>
+                    <td>${user.referralCode}</td>
+                    <td>
+                        <span class="${getReferralBadgeClass(user.referralCount)}">
+                            ${user.referralCount} referrals
+                        </span>
+                    </td>
+                    <td>${user.level1}</td>
+                    <td>${user.level2}</td>
+                    <td>${user.level3}</td>
+                    <td>${user.level4}</td>
+                    <td>${user.level5}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Function to sort table
+        function sortTable(field) {
+            if (sortField === field) {
+                // Toggle sort direction if same field
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // Set new sort field and default to descending
+                sortField = field;
+                sortDirection = 'desc';
+            }
+            
+            displayUsers(allUsers);
+        }
+        
+        // Function to search users
+        function searchUsers() {
+            const phone = document.getElementById('searchPhone').value.trim().toLowerCase();
+            const referralCode = document.getElementById('searchReferralCode').value.trim().toLowerCase();
+            const minReferrals = parseInt(document.getElementById('searchMinReferrals').value) || 0;
+            
+            if (!phone && !referralCode && minReferrals === 0) {
+                displayUsers(allUsers);
+                return;
+            }
+            
+            const filteredUsers = allUsers.filter(user => {
+                const matchesPhone = phone && user.phone && user.phone.toLowerCase().includes(phone);
+                const matchesReferralCode = referralCode && user.referralCode && user.referralCode.toLowerCase().includes(referralCode);
+                const matchesMinReferrals = user.referralCount >= minReferrals;
+                
+                return matchesPhone || matchesReferralCode || matchesMinReferrals;
+            });
+            
+            displayUsers(filteredUsers);
+        }
+        
+        // Function to logout
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = 'login.html';
+            }).catch((error) => {
+                showNotification('Error signing out: ' + error.message, 'error');
+            });
+        }
+        
+        // Initialize when page loads
+        window.onload = async () => {
+            // Check auth state
+            auth.onAuthStateChanged(async user => {
+                if (user) {
+                    // User is signed in
+                    currentAdmin = user;
+                    document.getElementById('adminEmail').textContent = user.email;
+                    
+                    // Load all users
+                    loadAllUsers();
+                    
+                } else {
+                    // No user is signed in
+                    showNotification('Please login to access this page', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                }
+            });
+        };
+    </script>
+</body>
+</html>

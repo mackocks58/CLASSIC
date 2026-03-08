@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Announcements | ATLAS ZONE</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-black: #0F0F0F;
+            --secondary-black: #1A1A1A;
+            --golden: #FFD700;
+            --golden-light: #FFED4E;
+            --golden-dark: #B8860B;
+            --success: #28A745;
+            --danger: #DC3545;
+            --warning: #FFC107;
+            --info: #17A2B8;
+            --dark-text: #FFFFFF;
+            --light-text: #CCCCCC;
+            --border-color: #333333;
+            --card-bg: #1A1A1A;
+            --light-bg: #1E1E1E;
+            --overlay-bg: rgba(0, 0, 0, 0.85);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #000000 0%, var(--primary-black) 100%);
+            color: var(--dark-text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--secondary-black);
+            border-right: 2px solid var(--golden);
+            padding: 20px 0;
+            z-index: 100;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+            overflow-y: auto;
+        }
+        
+        .logo-area {
+            text-align: center;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--golden);
+            padding: 5px;
+            background: black;
+            margin-bottom: 10px;
+        }
+        
+        .logo-text {
+            color: var(--golden);
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .nav-menu {
+            list-style: none;
+            padding: 0 15px;
+        }
+        
+        .nav-item {
+            margin-bottom: 8px;
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: var(--light-text);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--golden);
+            transform: translateX(5px);
+        }
+        
+        .nav-link i {
+            font-size: 18px;
+            width: 25px;
+        }
+        
+        .nav-text {
+            font-size: 15px;
+            font-weight: 500;
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .page-title {
+            color: var(--golden);
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .admin-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .admin-name {
+            color: var(--light-text);
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .logout-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .logout-btn:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+        
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(255, 215, 0, 0.1);
+            border-color: var(--golden);
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            color: var(--golden);
+            font-size: 22px;
+        }
+        
+        .stat-title {
+            color: var(--light-text);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            color: var(--golden);
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .stat-change {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .stat-change.positive {
+            color: var(--success);
+        }
+        
+        .stat-change.negative {
+            color: var(--danger);
+        }
+        
+        /* Main Content Tabs */
+        .content-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        
+        .tab-btn {
+            background: var(--light-bg);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: var(--light-text);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--golden);
+        }
+        
+        .tab-btn.active {
+            background: rgba(255, 215, 0, 0.15);
+            color: var(--golden);
+            border: 1px solid var(--golden);
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Send Announcement Form */
+        .announcement-form {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .form-title {
+            color: var(--golden);
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--light-text);
+            font-size: 15px;
+            font-weight: 500;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--light-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--dark-text);
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            border-color: var(--golden);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+        }
+        
+        .form-textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .recipient-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .recipient-option {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .users-search-container {
+            position: relative;
+        }
+        
+        .users-search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .user-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-option:hover {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--golden);
+        }
+        
+        .user-option:last-child {
+            border-bottom: none;
+        }
+        
+        .user-phone {
+            font-size: 13px;
+            color: var(--light-text);
+        }
+        
+        .selected-users {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .selected-user-tag {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--golden);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .remove-user {
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: var(--golden);
+            color: black;
+        }
+        
+        .btn-primary:hover {
+            background: var(--golden-light);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(255, 215, 0, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--light-bg);
+            color: var(--light-text);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--secondary-black);
+            color: var(--golden);
+        }
+        
+        /* Announcements List */
+        .announcements-list {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .announcements-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(255, 215, 0, 0.05);
+        }
+        
+        .list-title {
+            color: var(--golden);
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .announcement-item {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s;
+        }
+        
+        .announcement-item:hover {
+            background: rgba(255, 215, 0, 0.05);
+        }
+        
+        .announcement-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .announcement-title {
+            color: var(--dark-text);
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .announcement-meta {
+            display: flex;
+            gap: 15px;
+            color: var(--light-text);
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+        
+        .announcement-target {
+            background: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .announcement-body {
+            color: var(--light-text);
+            line-height: 1.6;
+            margin-bottom: 15px;
+            white-space: pre-line;
+        }
+        
+        .announcement-stats {
+            display: flex;
+            gap: 20px;
+            color: var(--light-text);
+            font-size: 14px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .announcement-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .edit-btn {
+            background: rgba(23, 162, 184, 0.1);
+            color: var(--info);
+            border: 1px solid rgba(23, 162, 184, 0.3);
+        }
+        
+        .edit-btn:hover {
+            background: rgba(23, 162, 184, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .delete-btn {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+        
+        .delete-btn:hover {
+            background: rgba(220, 53, 69, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .view-readers-btn {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--golden);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .view-readers-btn:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .no-announcements {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--light-text);
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--overlay-bg);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: var(--card-bg);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid var(--golden);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: modalFadeIn 0.4s ease-out;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            color: var(--golden);
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--light-text);
+            font-size: 24px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .modal-close:hover {
+            background: var(--danger);
+            color: white;
+            transform: rotate(90deg);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-text {
+            color: var(--light-text);
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .readers-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .reader-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .reader-item:last-child {
+            border-bottom: none;
+        }
+        
+        .reader-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .reader-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: rgba(255, 215, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--golden);
+        }
+        
+        .reader-name {
+            font-weight: 500;
+        }
+        
+        .reader-phone {
+            font-size: 13px;
+            color: var(--light-text);
+        }
+        
+        .read-time {
+            font-size: 12px;
+            color: var(--light-text);
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--overlay-bg);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 70px;
+            height: 70px;
+            display: inline-block;
+            position: relative;
+        }
+        
+        .spinner::after,
+        .spinner::before {
+            content: '';  
+            box-sizing: border-box;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid var(--golden);
+            position: absolute;
+            left: 0;
+            top: 0;
+            animation: spinner-anim 1s linear infinite;
+        }
+        
+        .spinner::after {
+            animation-delay: 0.1s;
+        }
+        
+        @keyframes spinner-anim {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+        
+        .loading-text {
+            color: var(--golden);
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1500;
+        }
+        
+        .toast {
+            background: var(--card-bg);
+            color: var(--dark-text);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid var(--golden);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: translateX(100%);
+            animation: slideInRight 0.3s forwards;
+            max-width: 350px;
+        }
+        
+        @keyframes slideInRight {
+            to { transform: translateX(0); }
+        }
+        
+        .toast.success {
+            border-left-color: var(--success);
+        }
+        
+        .toast.error {
+            border-left-color: var(--danger);
+        }
+        
+        .toast.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .toast.info {
+            border-left-color: var(--info);
+        }
+        
+        .toast-icon {
+            font-size: 20px;
+        }
+        
+        .toast.success .toast-icon {
+            color: var(--success);
+        }
+        
+        .toast.error .toast-icon {
+            color: var(--danger);
+        }
+        
+        .toast.warning .toast-icon {
+            color: var(--warning);
+        }
+        
+        .toast.info .toast-icon {
+            color: var(--info);
+        }
+        
+        .toast-content {
+            flex: 1;
+        }
+        
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .toast-message {
+            font-size: 14px;
+            color: var(--light-text);
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--light-text);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 5px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 70px;
+                overflow-x: hidden;
+            }
+            
+            .logo-area {
+                padding: 0 10px 20px;
+            }
+            
+            .logo-text, .nav-text {
+                display: none;
+            }
+            
+            .nav-link {
+                justify-content: center;
+                padding: 15px;
+            }
+            
+            .nav-link:hover, .nav-link.active {
+                transform: none;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px;
+            }
+            
+            .top-bar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .recipient-options {
+                flex-direction: column;
+            }
+            
+            .recipient-option {
+                min-width: 100%;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 0;
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+                width: 250px;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .announcement-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .announcement-stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading...</div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="logo-area">
+            <img src="https/logo.png" alt="Logo" class="logo">
+            <div class="logo-text">ADMIN PANEL</div>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" data-tab="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-tab="announcements">
+                    <i class="fas fa-bullhorn"></i>
+                    <span class="nav-text">Announcements</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-tab="users">
+                    <i class="fas fa-users"></i>
+                    <span class="nav-text">Users</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-tab="analytics">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="nav-text">Analytics</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    <span class="nav-text">Settings</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <h1 class="page-title" id="pageTitle">Announcements Dashboard</h1>
+            <div class="admin-info">
+                <span class="admin-name" id="adminName">Loading...</span>
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+        
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="dashboardTab">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-title">Total Users</div>
+                    <div class="stat-value" id="totalUsers">0</div>
+                    <div class="stat-change positive" id="usersChange">
+                        <i class="fas fa-arrow-up"></i> 12% from last month
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <div class="stat-title">Announcements Sent</div>
+                    <div class="stat-value" id="totalAnnouncements">0</div>
+                    <div class="stat-change positive" id="announcementsChange">
+                        <i class="fas fa-arrow-up"></i> 8% from last month
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <div class="stat-title">Avg. Read Rate</div>
+                    <div class="stat-value" id="avgReadRate">0%</div>
+                    <div class="stat-change positive" id="readRateChange">
+                        <i class="fas fa-arrow-up"></i> 5% from last month
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-title">Active Today</div>
+                    <div class="stat-value" id="activeToday">0</div>
+                    <div class="stat-change negative" id="activeChange">
+                        <i class="fas fa-arrow-down"></i> 3% from yesterday
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content-tabs">
+                <button class="tab-btn active" data-content="sendAnnouncement">
+                    <i class="fas fa-paper-plane"></i>
+                    Send Announcement
+                </button>
+                <button class="tab-btn" data-content="viewAnnouncements">
+                    <i class="fas fa-list"></i>
+                    View Announcements
+                </button>
+                <button class="tab-btn" data-content="quickStats">
+                    <i class="fas fa-chart-pie"></i>
+                    Quick Stats
+                </button>
+            </div>
+            
+            <!-- Send Announcement Form -->
+            <div class="announcement-form active" id="sendAnnouncementForm">
+                <h3 class="form-title">Send New Announcement</h3>
+                <form id="announcementForm">
+                    <div class="form-group">
+                        <label class="form-label">Announcement Title *</label>
+                        <input type="text" class="form-input" id="announcementTitle" 
+                               placeholder="Enter announcement title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Message *</label>
+                        <textarea class="form-textarea" id="announcementMessage" 
+                                  placeholder="Type your announcement message here..." 
+                                  required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Recipient Type *</label>
+                        <select class="form-select" id="recipientType">
+                            <option value="all">All Users</option>
+                            <option value="group">User Group</option>
+                            <option value="specific">Specific Users</option>
+                            <option value="level">Referral Level</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Group Selection (hidden by default) -->
+                    <div class="form-group" id="groupSelection" style="display: none;">
+                        <label class="form-label">Select Group</label>
+                        <select class="form-select" id="groupSelect">
+                            <option value="level1">Level 1 Referrals</option>
+                            <option value="level2">Level 2 Referrals</option>
+                            <option value="level3">Level 3 Referrals</option>
+                            <option value="level4">Level 4 Referrals</option>
+                            <option value="level5">Level 5 Referrals</option>
+                            <option value="active">Active Users (Last 7 days)</option>
+                            <option value="inactive">Inactive Users (30+ days)</option>
+                            <option value="depositors">Users with Deposits</option>
+                            <option value="non-depositors">Users without Deposits</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Referral Level Selection (hidden by default) -->
+                    <div class="form-group" id="levelSelection" style="display: none;">
+                        <label class="form-label">Select Referral Level</label>
+                        <select class="form-select" id="levelSelect">
+                            <option value="1">Level 1</option>
+                            <option value="2">Level 2</option>
+                            <option value="3">Level 3</option>
+                            <option value="4">Level 4</option>
+                            <option value="5">Level 5</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Specific Users Selection (hidden by default) -->
+                    <div class="form-group" id="specificUsersSelection" style="display: none;">
+                        <label class="form-label">Select Specific Users</label>
+                        <div class="users-search-container">
+                            <input type="text" class="form-input" id="usersSearch" 
+                                   placeholder="Search users by phone number...">
+                            <div class="users-search-results" id="usersSearchResults"></div>
+                        </div>
+                        <div class="selected-users" id="selectedUsers"></div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="previewBtn">
+                            <i class="fas fa-eye"></i>
+                            Preview
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i>
+                            Send Announcement
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- View Announcements -->
+            <div class="announcements-list" id="viewAnnouncements" style="display: none;">
+                <div class="announcements-header">
+                    <h3 class="list-title">All Announcements</h3>
+                    <div class="announcement-filters">
+                        <select class="form-select" id="announcementFilter" style="width: auto; padding: 8px 15px;">
+                            <option value="all">All Announcements</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="read">Most Read</option>
+                            <option value="unread">Least Read</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="announcementsList"></div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div id="quickStats" style="display: none;">
+                <!-- Stats content will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Other Tabs (Placeholder) -->
+        <div class="tab-content" id="usersTab">
+            <h2>Users Management</h2>
+            <p>Users management content goes here...</p>
+        </div>
+        
+        <div class="tab-content" id="analyticsTab">
+            <h2>Analytics</h2>
+            <p>Analytics content goes here...</p>
+        </div>
+        
+        <div class="tab-content" id="settingsTab">
+            <h2>Settings</h2>
+            <p>Settings content goes here...</p>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Delete</h3>
+                <button class="modal-close" id="closeDeleteModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-text">Are you sure you want to delete this announcement? This action cannot be undone.</p>
+                <p class="modal-text" id="deleteAnnouncementTitle" style="color: var(--golden); font-weight: 600;"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelDeleteBtn">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash"></i>
+                    Delete Announcement
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Readers List Modal -->
+    <div class="modal-overlay" id="readersModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Readers List</h3>
+                <button class="modal-close" id="closeReadersModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-text" id="readersCount">Loading readers...</p>
+                <div class="readers-list" id="readersList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closeReadersBtn">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Preview Modal -->
+    <div class="modal-overlay" id="previewModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Preview Announcement</h3>
+                <button class="modal-close" id="closePreviewModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4 id="previewTitle" style="color: var(--golden); margin-bottom: 15px;"></h4>
+                <p id="previewMessage" style="color: var(--light-text); line-height: 1.6; white-space: pre-line;"></p>
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <p style="color: var(--light-text); font-size: 14px;">
+                        <strong>Recipients:</strong> <span id="previewRecipients"></span>
+                    </p>
+                    <p style="color: var(--light-text); font-size: 14px; margin-top: 5px;">
+                        <strong>Estimated Reach:</strong> <span id="previewReach"></span> users
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closePreviewBtn">Close</button>
+                <button class="btn btn-primary" id="confirmSendBtn">
+                    <i class="fas fa-paper-plane"></i>
+                    Send Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIX3aQq3VEBq269Jdrk77CefNttqAR51s",
+  authDomain: "mozambique-newhope.firebaseapp.com",
+  databaseURL: "https://mozambique-newhope-default-rtdb.firebaseio.com",
+  projectId: "mozambique-newhope",
+  storageBucket: "mozambique-newhope.firebasestorage.app",
+  messagingSenderId: "133563964959",
+  appId: "1:133563964959:web:d3f183b721d540140f7f2a",
+  measurementId: "G-FY6CNVX6ZK"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // DOM Elements
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const toastContainer = document.getElementById('toastContainer');
+        const sidebar = document.getElementById('sidebar');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const pageTitle = document.getElementById('pageTitle');
+        const adminName = document.getElementById('adminName');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const contentTabs = document.querySelectorAll('[data-content]');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        
+        // Announcement Form Elements
+        const announcementForm = document.getElementById('announcementForm');
+        const recipientType = document.getElementById('recipientType');
+        const groupSelection = document.getElementById('groupSelection');
+        const levelSelection = document.getElementById('levelSelection');
+        const specificUsersSelection = document.getElementById('specificUsersSelection');
+        const usersSearch = document.getElementById('usersSearch');
+        const usersSearchResults = document.getElementById('usersSearchResults');
+        const selectedUsers = document.getElementById('selectedUsers');
+        const groupSelect = document.getElementById('groupSelect');
+        const levelSelect = document.getElementById('levelSelect');
+        const previewBtn = document.getElementById('previewBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        
+        // Announcements List Elements
+        const announcementFilter = document.getElementById('announcementFilter');
+        const announcementsList = document.getElementById('announcementsList');
+        
+        // Modal Elements
+        const deleteModal = document.getElementById('deleteModal');
+        const readersModal = document.getElementById('readersModal');
+        const previewModal = document.getElementById('previewModal');
+        const closeDeleteModal = document.getElementById('closeDeleteModal');
+        const closeReadersModal = document.getElementById('closeReadersModal');
+        const closePreviewModal = document.getElementById('closePreviewModal');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const closeReadersBtn = document.getElementById('closeReadersBtn');
+        const closePreviewBtn = document.getElementById('closePreviewBtn');
+        const confirmSendBtn = document.getElementById('confirmSendBtn');
+        
+        // Stats Elements
+        const totalUsers = document.getElementById('totalUsers');
+        const totalAnnouncements = document.getElementById('totalAnnouncements');
+        const avgReadRate = document.getElementById('avgReadRate');
+        const activeToday = document.getElementById('activeToday');
+
+        // State Variables
+        let currentUser = null;
+        let isAdmin = false;
+        let allUsers = [];
+        let selectedUserIds = [];
+        let announcementsData = [];
+        let currentAnnouncementId = null;
+
+        // Function to show toast notification
+        function showToast(type, title, message, duration = 5000) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    ${type === 'success' ? '<i class="fas fa-check-circle"></i>' :
+                      type === 'error' ? '<i class="fas fa-times-circle"></i>' :
+                      type === 'warning' ? '<i class="fas fa-exclamation-triangle"></i>' :
+                      '<i class="fas fa-info-circle"></i>'}
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close">&times;</button>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            const closeBtn = toast.querySelector('.toast-close');
+            closeBtn.addEventListener('click', () => {
+                toast.style.animation = 'slideInRight 0.3s reverse forwards';
+                setTimeout(() => toast.remove(), 300);
+            });
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.style.animation = 'slideInRight 0.3s reverse forwards';
+                        setTimeout(() => toast.remove(), 300);
+                    }
+                }, duration);
+            }
+            
+            return toast;
+        }
+
+        // Function to show/hide loading
+        function showLoading(show) {
+            loadingOverlay.style.display = show ? 'flex' : 'none';
+        }
+
+        // Function to check if user is admin
+        async function checkAdminStatus(userId) {
+            try {
+                const snapshot = await database.ref('admins').child(userId).once('value');
+                return snapshot.exists();
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+                return false;
+            }
+        }
+
+        // Function to load all users
+        async function loadAllUsers() {
+            try {
+                showLoading(true);
+                const snapshot = await database.ref('users').once('value');
+                if (snapshot.exists()) {
+                    allUsers = [];
+                    snapshot.forEach(childSnapshot => {
+                        const user = childSnapshot.val();
+                        user.id = childSnapshot.key;
+                        allUsers.push(user);
+                    });
+                    totalUsers.textContent = allUsers.length;
+                    showLoading(false);
+                    return allUsers;
+                } else {
+                    showLoading(false);
+                    return [];
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showLoading(false);
+                showToast('error', 'Error', 'Failed to load users');
+                return [];
+            }
+        }
+
+        // Function to load announcements
+        async function loadAnnouncements() {
+            try {
+                showLoading(true);
+                const snapshot = await database.ref('announcements').once('value');
+                announcementsData = [];
+                let totalReads = 0;
+                let totalAnnouncementsCount = 0;
+                
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnapshot => {
+                        const announcement = childSnapshot.val();
+                        announcement.id = childSnapshot.key;
+                        
+                        // Calculate read rate
+                        let readCount = 0;
+                        if (announcement.readBy) {
+                            readCount = Object.keys(announcement.readBy).length;
+                        }
+                        
+                        const totalUsersCount = allUsers.length;
+                        const readRate = totalUsersCount > 0 ? Math.round((readCount / totalUsersCount) * 100) : 0;
+                        
+                        announcement.readCount = readCount;
+                        announcement.readRate = readRate;
+                        totalReads += readRate;
+                        totalAnnouncementsCount++;
+                        
+                        announcementsData.push(announcement);
+                    });
+                    
+                    // Calculate average read rate
+                    const avgRate = totalAnnouncementsCount > 0 ? Math.round(totalReads / totalAnnouncementsCount) : 0;
+                    avgReadRate.textContent = `${avgRate}%`;
+                    totalAnnouncements.textContent = totalAnnouncementsCount;
+                    
+                    // Sort by timestamp (newest first)
+                    announcementsData.sort((a, b) => b.timestamp - a.timestamp);
+                    
+                    renderAnnouncementsList();
+                } else {
+                    announcementsList.innerHTML = `
+                        <div class="no-announcements">
+                            <i class="fas fa-bullhorn" style="font-size: 48px; color: var(--light-text); margin-bottom: 15px;"></i>
+                            <p>No announcements yet. Send your first announcement!</p>
+                        </div>
+                    `;
+                }
+                showLoading(false);
+            } catch (error) {
+                console.error('Error loading announcements:', error);
+                showLoading(false);
+                showToast('error', 'Error', 'Failed to load announcements');
+            }
+        }
+
+        // Function to render announcements list
+        function renderAnnouncementsList(filter = 'all') {
+            let filteredAnnouncements = [...announcementsData];
+            
+            // Apply filter
+            const now = Date.now();
+            switch(filter) {
+                case 'today':
+                    const today = new Date().setHours(0, 0, 0, 0);
+                    filteredAnnouncements = filteredAnnouncements.filter(a => 
+                        new Date(a.timestamp).setHours(0, 0, 0, 0) === today
+                    );
+                    break;
+                case 'week':
+                    const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+                    filteredAnnouncements = filteredAnnouncements.filter(a => a.timestamp > weekAgo);
+                    break;
+                case 'month':
+                    const monthAgo = now - (30 * 24 * 60 * 60 * 1000);
+                    filteredAnnouncements = filteredAnnouncements.filter(a => a.timestamp > monthAgo);
+                    break;
+                case 'read':
+                    filteredAnnouncements.sort((a, b) => b.readCount - a.readCount);
+                    break;
+                case 'unread':
+                    filteredAnnouncements.sort((a, b) => a.readCount - b.readCount);
+                    break;
+            }
+            
+            if (filteredAnnouncements.length === 0) {
+                announcementsList.innerHTML = `
+                    <div class="no-announcements">
+                        <i class="fas fa-search" style="font-size: 48px; color: var(--light-text); margin-bottom: 15px;"></i>
+                        <p>No announcements match your filter.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            filteredAnnouncements.forEach(announcement => {
+                const date = new Date(announcement.timestamp);
+                const dateStr = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                let targetText = '';
+                switch(announcement.target.type) {
+                    case 'all':
+                        targetText = 'All Users';
+                        break;
+                    case 'group':
+                        targetText = `Group: ${announcement.target.value}`;
+                        break;
+                    case 'specific':
+                        const count = announcement.target.value ? announcement.target.value.length : 0;
+                        targetText = `${count} Specific Users`;
+                        break;
+                    case 'level':
+                        targetText = `Level ${announcement.target.value} Referrals`;
+                        break;
+                }
+                
+                html += `
+                    <div class="announcement-item" data-id="${announcement.id}">
+                        <div class="announcement-header">
+                            <div>
+                                <h4 class="announcement-title">${announcement.title}</h4>
+                                <div class="announcement-meta">
+                                    <span><i class="far fa-calendar"></i> ${dateStr}</span>
+                                    <span class="announcement-target">${targetText}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="announcement-body">${announcement.message}</div>
+                        <div class="announcement-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-eye"></i>
+                                <span>${announcement.readCount} reads (${announcement.readRate}%)</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-users"></i>
+                                <span>${allUsers.length} total users</span>
+                            </div>
+                        </div>
+                        <div class="announcement-actions">
+                            <button class="action-btn view-readers-btn" data-id="${announcement.id}">
+                                <i class="fas fa-user-check"></i>
+                                View Readers
+                            </button>
+                            <button class="action-btn edit-btn" data-id="${announcement.id}">
+                                <i class="fas fa-edit"></i>
+                                Edit
+                            </button>
+                            <button class="action-btn delete-btn" data-id="${announcement.id}">
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            announcementsList.innerHTML = html;
+            
+            // Add event listeners to action buttons
+            document.querySelectorAll('.view-readers-btn').forEach(btn => {
+                btn.addEventListener('click', () => showReadersList(btn.dataset.id));
+            });
+            
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', () => editAnnouncement(btn.dataset.id));
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => showDeleteModal(btn.dataset.id));
+            });
+        }
+
+        // Function to show readers list
+        async function showReadersList(announcementId) {
+            try {
+                showLoading(true);
+                const snapshot = await database.ref(`announcements/${announcementId}/readBy`).once('value');
+                const readers = [];
+                
+                if (snapshot.exists()) {
+                    const readBy = snapshot.val();
+                    
+                    // Get reader details
+                    for (const userId in readBy) {
+                        const userSnapshot = await database.ref(`users/${userId}`).once('value');
+                        if (userSnapshot.exists()) {
+                            const user = userSnapshot.val();
+                            readers.push({
+                                id: userId,
+                                phone: user.phone,
+                                readTime: new Date(readBy[userId]).toLocaleString()
+                            });
+                        }
+                    }
+                }
+                
+                showLoading(false);
+                readersModal.classList.add('active');
+                document.getElementById('readersCount').textContent = `${readers.length} users have read this announcement`;
+                
+                let readersHtml = '';
+                if (readers.length > 0) {
+                    readers.forEach(reader => {
+                        readersHtml += `
+                            <div class="reader-item">
+                                <div class="reader-info">
+                                    <div class="reader-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <div class="reader-name">${reader.phone}</div>
+                                        <div class="reader-phone">User ID: ${reader.id.substring(0, 8)}...</div>
+                                    </div>
+                                </div>
+                                <div class="read-time">${reader.readTime}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    readersHtml = '<p style="text-align: center; color: var(--light-text); padding: 20px;">No readers yet.</p>';
+                }
+                
+                document.getElementById('readersList').innerHTML = readersHtml;
+                
+            } catch (error) {
+                console.error('Error loading readers:', error);
+                showLoading(false);
+                showToast('error', 'Error', 'Failed to load readers list');
+            }
+        }
+
+        // Function to show delete confirmation modal
+        function showDeleteModal(announcementId) {
+            const announcement = announcementsData.find(a => a.id === announcementId);
+            if (!announcement) return;
+            
+            currentAnnouncementId = announcementId;
+            document.getElementById('deleteAnnouncementTitle').textContent = announcement.title;
+            deleteModal.classList.add('active');
+        }
+
+        // Function to delete announcement
+        async function deleteAnnouncement() {
+            try {
+                showLoading(true);
+                await database.ref(`announcements/${currentAnnouncementId}`).remove();
+                
+                // Remove from local data
+                announcementsData = announcementsData.filter(a => a.id !== currentAnnouncementId);
+                
+                // Update UI
+                renderAnnouncementsList(announcementFilter.value);
+                
+                showLoading(false);
+                deleteModal.classList.remove('active');
+                showToast('success', 'Success', 'Announcement deleted successfully');
+                
+                // Update stats
+                totalAnnouncements.textContent = announcementsData.length;
+                
+            } catch (error) {
+                console.error('Error deleting announcement:', error);
+                showLoading(false);
+                showToast('error', 'Error', 'Failed to delete announcement');
+            }
+        }
+
+        // Function to edit announcement (placeholder)
+        function editAnnouncement(announcementId) {
+            const announcement = announcementsData.find(a => a.id === announcementId);
+            if (!announcement) return;
+            
+            // For now, just show a message
+            showToast('info', 'Edit Feature', 'Edit feature will be implemented soon');
+            
+            // In future implementation:
+            // 1. Load announcement data into form
+            // 2. Change form to edit mode
+            // 3. Update instead of create
+        }
+
+        // Function to get user phone by ID
+        function getUserPhone(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            return user ? user.phone : 'Unknown';
+        }
+
+        // Function to search users
+        function searchUsers(query) {
+            if (!query.trim()) {
+                usersSearchResults.style.display = 'none';
+                return;
+            }
+            
+            const filteredUsers = allUsers.filter(user => 
+                user.phone.includes(query) || 
+                user.id.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            if (filteredUsers.length === 0) {
+                usersSearchResults.innerHTML = '<div class="user-option">No users found</div>';
+                usersSearchResults.style.display = 'block';
+                return;
+            }
+            
+            let html = '';
+            filteredUsers.slice(0, 10).forEach(user => {
+                // Check if user is already selected
+                const isSelected = selectedUserIds.includes(user.id);
+                
+                html += `
+                    <div class="user-option ${isSelected ? 'selected' : ''}" data-id="${user.id}">
+                        <i class="fas fa-user"></i>
+                        <div>
+                            <div>${user.phone}</div>
+                            <div class="user-phone">ID: ${user.id.substring(0, 8)}...</div>
+                        </div>
+                        ${isSelected ? '<i class="fas fa-check" style="margin-left: auto; color: var(--success);"></i>' : ''}
+                    </div>
+                `;
+            });
+            
+            usersSearchResults.innerHTML = html;
+            usersSearchResults.style.display = 'block';
+            
+            // Add click event to user options
+            document.querySelectorAll('.user-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const userId = option.dataset.id;
+                    
+                    if (selectedUserIds.includes(userId)) {
+                        // Remove from selection
+                        selectedUserIds = selectedUserIds.filter(id => id !== userId);
+                        showToast('info', 'Removed', 'User removed from selection');
+                    } else {
+                        // Add to selection
+                        selectedUserIds.push(userId);
+                        showToast('success', 'Added', 'User added to selection');
+                    }
+                    
+                    updateSelectedUsersDisplay();
+                    searchUsers(query); // Refresh search results
+                });
+            });
+        }
+
+        // Function to update selected users display
+        function updateSelectedUsersDisplay() {
+            if (selectedUserIds.length === 0) {
+                selectedUsers.innerHTML = '<div style="color: var(--light-text); font-style: italic;">No users selected</div>';
+                return;
+            }
+            
+            let html = '';
+            selectedUserIds.forEach(userId => {
+                const user = allUsers.find(u => u.id === userId);
+                if (user) {
+                    html += `
+                        <div class="selected-user-tag">
+                            <span>${user.phone}</span>
+                            <span class="remove-user" data-id="${userId}">&times;</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            selectedUsers.innerHTML = html;
+            
+            // Add remove functionality
+            document.querySelectorAll('.remove-user').forEach(removeBtn => {
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const userId = removeBtn.dataset.id;
+                    selectedUserIds = selectedUserIds.filter(id => id !== userId);
+                    updateSelectedUsersDisplay();
+                    showToast('info', 'Removed', 'User removed from selection');
+                });
+            });
+        }
+
+        // Function to get recipients count based on selection
+        async function getRecipientsCount(recipientTypeValue, targetValue) {
+            if (recipientTypeValue === 'all') {
+                return allUsers.length;
+            }
+            
+            if (recipientTypeValue === 'specific') {
+                return selectedUserIds.length;
+            }
+            
+            if (recipientTypeValue === 'group') {
+                // Estimate based on group
+                switch(targetValue) {
+                    case 'active':
+                        // Estimate 70% active
+                        return Math.round(allUsers.length * 0.7);
+                    case 'inactive':
+                        // Estimate 30% inactive
+                        return Math.round(allUsers.length * 0.3);
+                    case 'depositors':
+                        // Estimate 50% depositors
+                        return Math.round(allUsers.length * 0.5);
+                    case 'non-depositors':
+                        // Estimate 50% non-depositors
+                        return Math.round(allUsers.length * 0.5);
+                    default:
+                        // For referral levels, estimate based on level
+                        if (targetValue.startsWith('level')) {
+                            const level = parseInt(targetValue.replace('level', ''));
+                            // Estimate: level 1: 30%, level 2: 25%, level 3: 20%, level 4: 15%, level 5: 10%
+                            const percentages = [0.3, 0.25, 0.2, 0.15, 0.1];
+                            const percentage = percentages[level - 1] || 0.1;
+                            return Math.round(allUsers.length * percentage);
+                        }
+                        return allUsers.length;
+                }
+            }
+            
+            if (recipientTypeValue === 'level') {
+                const level = parseInt(targetValue);
+                // Estimate based on level
+                const percentages = [0.3, 0.25, 0.2, 0.15, 0.1];
+                const percentage = percentages[level - 1] || 0.1;
+                return Math.round(allUsers.length * percentage);
+            }
+            
+            return 0;
+        }
+
+        // Function to preview announcement
+        async function previewAnnouncement() {
+            const title = document.getElementById('announcementTitle').value.trim();
+            const message = document.getElementById('announcementMessage').value.trim();
+            const recipientTypeValue = recipientType.value;
+            let targetValue = '';
+            let recipientsText = '';
+            
+            if (!title || !message) {
+                showToast('error', 'Error', 'Please fill in title and message');
+                return;
+            }
+            
+            switch(recipientTypeValue) {
+                case 'all':
+                    targetValue = 'all';
+                    recipientsText = 'All Users';
+                    break;
+                case 'group':
+                    targetValue = groupSelect.value;
+                    recipientsText = `Group: ${groupSelect.options[groupSelect.selectedIndex].text}`;
+                    break;
+                case 'specific':
+                    if (selectedUserIds.length === 0) {
+                        showToast('error', 'Error', 'Please select at least one user');
+                        return;
+                    }
+                    targetValue = selectedUserIds;
+                    recipientsText = `${selectedUserIds.length} Specific Users`;
+                    break;
+                case 'level':
+                    targetValue = levelSelect.value;
+                    recipientsText = `Level ${levelSelect.value} Referrals`;
+                    break;
+            }
+            
+            const reach = await getRecipientsCount(recipientTypeValue, targetValue);
+            
+            // Show preview modal
+            document.getElementById('previewTitle').textContent = title;
+            document.getElementById('previewMessage').textContent = message;
+            document.getElementById('previewRecipients').textContent = recipientsText;
+            document.getElementById('previewReach').textContent = reach;
+            
+            previewModal.classList.add('active');
+        }
+
+        // Function to send announcement
+        async function sendAnnouncement() {
+            const title = document.getElementById('announcementTitle').value.trim();
+            const message = document.getElementById('announcementMessage').value.trim();
+            const recipientTypeValue = recipientType.value;
+            let targetValue = '';
+            
+            if (!title || !message) {
+                showToast('error', 'Error', 'Please fill in title and message');
+                return;
+            }
+            
+            // Determine target value based on recipient type
+            switch(recipientTypeValue) {
+                case 'all':
+                    targetValue = 'all';
+                    break;
+                case 'group':
+                    targetValue = groupSelect.value;
+                    break;
+                case 'specific':
+                    if (selectedUserIds.length === 0) {
+                        showToast('error', 'Error', 'Please select at least one user');
+                        return;
+                    }
+                    targetValue = selectedUserIds;
+                    break;
+                case 'level':
+                    targetValue = levelSelect.value;
+                    break;
+            }
+            
+            const announcementData = {
+                title: title,
+                message: message,
+                target: {
+                    type: recipientTypeValue,
+                    value: targetValue
+                },
+                timestamp: Date.now(),
+                sentBy: currentUser.uid,
+                sentByName: currentUser.email,
+                readBy: {} // Empty object to track readers
+            };
+            
+            try {
+                showLoading(true);
+                
+                // Save to Firebase
+                const newRef = database.ref('announcements').push();
+                await newRef.set(announcementData);
+                
+                // Also create a copy for each user's notifications if needed
+                if (recipientTypeValue === 'specific') {
+                    // Store announcement reference for each specific user
+                    for (const userId of selectedUserIds) {
+                        await database.ref(`userNotifications/${userId}/${newRef.key}`).set({
+                            announcementId: newRef.key,
+                            timestamp: announcementData.timestamp,
+                            read: false
+                        });
+                    }
+                } else {
+                    // Store for all users (they'll see it in their notifications)
+                    // This could be optimized in production
+                }
+                
+                showLoading(false);
+                previewModal.classList.remove('active');
+                
+                // Reset form
+                announcementForm.reset();
+                selectedUserIds = [];
+                updateSelectedUsersDisplay();
+                
+                // Show success message
+                showToast('success', 'Success', 'Announcement sent successfully!');
+                
+                // Reload announcements
+                await loadAnnouncements();
+                
+            } catch (error) {
+                console.error('Error sending announcement:', error);
+                showLoading(false);
+                showToast('error', 'Error', 'Failed to send announcement');
+            }
+        }
+
+        // Function to handle recipient type change
+        function handleRecipientTypeChange() {
+            const value = recipientType.value;
+            
+            // Hide all selection areas
+            groupSelection.style.display = 'none';
+            levelSelection.style.display = 'none';
+            specificUsersSelection.style.display = 'none';
+            usersSearchResults.style.display = 'none';
+            
+            // Show relevant selection area
+            switch(value) {
+                case 'group':
+                    groupSelection.style.display = 'block';
+                    break;
+                case 'specific':
+                    specificUsersSelection.style.display = 'block';
+                    break;
+                case 'level':
+                    levelSelection.style.display = 'block';
+                    break;
+            }
+        }
+
+        // Initialize the application
+        async function init() {
+            showLoading(true);
+            
+            // Check authentication
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    adminName.textContent = user.email;
+                    
+                    // Check if user is admin
+                    isAdmin = await checkAdminStatus(user.uid);
+                    
+                    if (!isAdmin) {
+                        showToast('error', 'Access Denied', 'You do not have admin privileges');
+                        setTimeout(() => {
+                            window.location.href = 'login.html';
+                        }, 2000);
+                        return;
+                    }
+                    
+                    // Load data
+                    await loadAllUsers();
+                    await loadAnnouncements();
+                    
+                    // Set active today count (placeholder - in real app, track user activity)
+                    const activeCount = Math.round(allUsers.length * 0.3); // Estimate 30% active
+                    activeToday.textContent = activeCount;
+                    
+                    showLoading(false);
+                    showToast('success', 'Welcome', 'Admin panel loaded successfully');
+                    
+                } else {
+                    // Not logged in, redirect to login
+                    showLoading(false);
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+
+        // Event Listeners
+        // Navigation
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tab = link.dataset.tab;
+                
+                // Update active nav link
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                // Update page title
+                pageTitle.textContent = link.querySelector('.nav-text').textContent + ' - Admin Panel';
+                
+                // Show correct tab content
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(`${tab}Tab`).classList.add('active');
+            });
+        });
+
+        // Content tabs
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const contentId = btn.dataset.content;
+                
+                // Update active tab button
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Hide all content
+                document.getElementById('sendAnnouncementForm').style.display = 'none';
+                document.getElementById('viewAnnouncements').style.display = 'none';
+                document.getElementById('quickStats').style.display = 'none';
+                
+                // Show selected content
+                document.getElementById(contentId).style.display = 'block';
+            });
+        });
+
+        // Recipient type change
+        recipientType.addEventListener('change', handleRecipientTypeChange);
+
+        // User search
+        usersSearch.addEventListener('input', (e) => {
+            searchUsers(e.target.value);
+        });
+
+        // Close search results when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!usersSearch.contains(e.target) && !usersSearchResults.contains(e.target)) {
+                usersSearchResults.style.display = 'none';
+            }
+        });
+
+        // Preview button
+        previewBtn.addEventListener('click', previewAnnouncement);
+
+        // Form submission
+        announcementForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            previewAnnouncement();
+        });
+
+        // Announcement filter
+        announcementFilter.addEventListener('change', (e) => {
+            renderAnnouncementsList(e.target.value);
+        });
+
+        // Modals
+        closeDeleteModal.addEventListener('click', () => deleteModal.classList.remove('active'));
+        cancelDeleteBtn.addEventListener('click', () => deleteModal.classList.remove('active'));
+        confirmDeleteBtn.addEventListener('click', deleteAnnouncement);
+
+        closeReadersModal.addEventListener('click', () => readersModal.classList.remove('active'));
+        closeReadersBtn.addEventListener('click', () => readersModal.classList.remove('active'));
+
+        closePreviewModal.addEventListener('click', () => previewModal.classList.remove('active'));
+        closePreviewBtn.addEventListener('click', () => previewModal.classList.remove('active'));
+        confirmSendBtn.addEventListener('click', sendAnnouncement);
+
+        // Logout
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut().then(() => {
+                window.location.href = 'login.html';
+            });
+        });
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

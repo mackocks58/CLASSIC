@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Admin · Payment Methods · Botswana</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Mobile First Design */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            background: #0A0A0A;
+            color: #FFFFFF;
+            min-height: 100vh;
+            padding: 12px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .admin-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* Header - Mobile Optimized */
+        .admin-header {
+            background: linear-gradient(135deg, #000000, #1A1A1A);
+            padding: 20px 16px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .header-title i {
+            font-size: 28px;
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255,215,0,0.3);
+        }
+        
+        .header-title h1 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #FFD700;
+        }
+        
+        .header-title p {
+            color: #CCCCCC;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        
+        .logout-btn {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #FFD700;
+            color: #FFD700;
+            padding: 10px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        
+        .logout-btn:active {
+            background: #FFD700;
+            color: #000000;
+            transform: scale(0.96);
+        }
+        
+        /* Stats Cards - Mobile Grid */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .stat-card {
+            background: #1A1A1A;
+            padding: 16px 8px;
+            border-radius: 16px;
+            border: 1px solid #333333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 8px;
+        }
+        
+        .stat-card:active {
+            background: #222222;
+            border-color: #FFD700;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #FFD700;
+        }
+        
+        .stat-info h3 {
+            font-size: 11px;
+            color: #CCCCCC;
+            margin-bottom: 2px;
+        }
+        
+        .stat-info span {
+            font-size: 18px;
+            font-weight: 800;
+            color: #FFD700;
+        }
+        
+        /* Cards - Mobile Optimized */
+        .card {
+            background: #1A1A1A;
+            border-radius: 20px;
+            padding: 20px 16px;
+            border: 1px solid #333333;
+            margin-bottom: 16px;
+        }
+        
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #FFD700;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #333333;
+        }
+        
+        .card-title i {
+            font-size: 20px;
+        }
+        
+        /* Form - Touch Friendly */
+        .form-group {
+            margin-bottom: 18px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #FFED4E;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 16px 14px;
+            background: #0F0F0F;
+            border: 2px solid #333333;
+            border-radius: 14px;
+            color: #FFFFFF;
+            font-size: 16px;
+            transition: all 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        .form-control:focus {
+            border-color: #FFD700;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+        }
+        
+        .form-control::placeholder {
+            color: #666666;
+            font-size: 14px;
+        }
+        
+        /* Select dropdown styling */
+        select.form-control {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23FFD700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            padding-right: 44px;
+        }
+        
+        /* Prefixes Container */
+        .prefixes-container {
+            background: #0F0F0F;
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 8px;
+        }
+        
+        .prefix-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .prefix-input {
+            flex: 1;
+            padding: 14px;
+            background: #1A1A1A;
+            border: 1px solid #333333;
+            border-radius: 12px;
+            color: #FFFFFF;
+            font-size: 16px;
+            text-align: center;
+            -webkit-appearance: none;
+        }
+        
+        .prefix-input:focus {
+            border-color: #FFD700;
+        }
+        
+        /* Buttons - Bigger Touch Area */
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 50px;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700, #B8860B);
+            color: #000000;
+            width: 100%;
+            font-size: 16px;
+            font-weight: 800;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+        }
+        
+        .btn-primary:active {
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+        }
+        
+        .btn-danger {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid #DC3545;
+            color: #DC3545;
+        }
+        
+        .btn-danger:active {
+            background: #DC3545;
+            color: #FFFFFF;
+        }
+        
+        .btn-success {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid #28A745;
+            color: #28A745;
+        }
+        
+        .btn-warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid #FFC107;
+            color: #FFC107;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+            min-width: 140px;
+        }
+        
+        /* Payment Methods List - Mobile Optimized */
+        .payment-methods-list {
+            max-height: 500px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 4px;
+        }
+        
+        .method-item {
+            background: #0F0F0F;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 12px;
+            border-left: 4px solid #FFD700;
+            position: relative;
+        }
+        
+        .method-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .method-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #FFD700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            word-break: break-word;
+        }
+        
+        .method-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .method-actions .btn {
+            padding: 10px 16px;
+            min-height: 40px;
+            font-size: 13px;
+        }
+        
+        .method-detail {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #333333;
+        }
+        
+        .method-detail-item {
+            font-size: 13px;
+        }
+        
+        .method-detail-label {
+            color: #CCCCCC;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+        
+        .method-detail-value {
+            color: #FFFFFF;
+            font-weight: 600;
+            font-size: 14px;
+            word-break: break-word;
+        }
+        
+        .prefix-badge {
+            display: inline-block;
+            background: rgba(255, 215, 0, 0.1);
+            color: #FFD700;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 13px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+            font-weight: 600;
+            border: 1px solid rgba(255,215,0,0.2);
+        }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(8px);
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading-spinner i {
+            font-size: 50px;
+            color: #FFD700;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-spinner p {
+            margin-top: 16px;
+            color: #FFD700;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Toast Messages - Mobile */
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            padding: 16px 20px;
+            background: #1A1A1A;
+            border-left: 4px solid #FFD700;
+            border-radius: 14px;
+            color: #FFFFFF;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+            animation: slideDown 0.3s ease;
+            z-index: 10000;
+            font-size: 14px;
+        }
+        
+        .toast.success {
+            border-left-color: #28A745;
+        }
+        
+        .toast.error {
+            border-left-color: #DC3545;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666666;
+        }
+        
+        .empty-state i {
+            font-size: 50px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .empty-state small {
+            font-size: 13px;
+            color: #999999;
+        }
+        
+        /* Last Updated Badge */
+        .last-updated {
+            margin-left: auto;
+            font-size: 11px;
+            background: rgba(255,215,0,0.1);
+            padding: 6px 12px;
+            border-radius: 30px;
+            color: #FFED4E;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        
+        /* Export Section */
+        .export-section {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .export-section .btn {
+            flex: 1;
+        }
+        
+        /* Responsive Touch Optimizations */
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+            
+            .admin-header {
+                padding: 16px;
+            }
+            
+            .header-title i {
+                font-size: 24px;
+            }
+            
+            .header-title h1 {
+                font-size: 18px;
+            }
+            
+            .header-title p {
+                font-size: 11px;
+            }
+            
+            .stat-card {
+                padding: 12px 4px;
+            }
+            
+            .stat-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+            
+            .stat-info span {
+                font-size: 16px;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn-group .btn {
+                width: 100%;
+            }
+            
+            .method-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .method-actions {
+                width: 100%;
+            }
+            
+            .method-actions .btn {
+                flex: 1;
+            }
+            
+            .last-updated {
+                margin-left: 0;
+                width: 100%;
+                justify-content: center;
+                margin-top: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fas fa-circle-notch"></i>
+            <p id="loadingMessage">Processing...</p>
+        </div>
+    </div>
+    
+    <div class="admin-container">
+        <!-- Header -->
+        <div class="admin-header">
+            <div class="header-title">
+                <i class="fas fa-crown"></i>
+                <div>
+                    <h1>Payment Methods</h1>
+                    <p>Admin · Botswana</p>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Exit
+            </button>
+        </div>
+        
+        <!-- Statistics Cards -->
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-wifi"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Networks</h3>
+                    <span id="totalNetworks">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-phone-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Numbers</h3>
+                    <span id="totalNumbers">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Prefixes</h3>
+                    <span id="totalPrefixes">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add/Edit Form Card -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-plus-circle" id="formIcon"></i>
+                <span id="formTitle">Add Payment Method</span>
+                <span class="last-updated" id="lastUpdated">
+                    <i class="fas fa-clock"></i> now
+                </span>
+            </div>
+            
+            <form id="paymentMethodForm">
+                <input type="hidden" id="editKey" value="">
+                
+                <div class="form-group">
+                    <label class="form-label">Network Name</label>
+                    <select class="form-control" id="networkName" required>
+                        <option value="">Select network</option>
+                        <option value="Mascom MyZaka">Mascom MyZaka</option>
+                        <option value="Orange Money">Orange Money</option>
+                        <option value="BeMobile Money">BeMobile Money</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Payment Number</label>
+                    <input type="tel" class="form-control" id="paymentNumber" 
+                           placeholder="8 digits · 71234567" maxlength="8" pattern="\d*" inputmode="numeric" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Account Name</label>
+                    <input type="text" class="form-control" id="accountName" 
+                           placeholder="e.g. CLASSIC MAXIMIZE BOTSWANA" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Icon (FontAwesome)</label>
+                    <input type="text" class="form-control" id="icon" 
+                           placeholder="fas fa-mobile-alt" value="fas fa-mobile-alt">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Color Code</label>
+                    <input type="text" class="form-control" id="color" 
+                           placeholder="#FFD700" value="#FFD700">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Prefixes (start digits, e.g. 71, 74, 77)</label>
+                    <div class="prefixes-container">
+                        <div id="prefixesList">
+                            <div class="prefix-input-group">
+                                <input type="text" class="prefix-input" placeholder="e.g. 71" maxlength="2" inputmode="numeric">
+                                <button type="button" class="btn remove-prefix" style="padding: 14px; background: rgba(220,53,69,0.1); color: #DC3545; min-height: 50px;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn" id="addPrefixBtn" style="margin-top: 12px; width: 100%; background: rgba(255,215,0,0.1); color: #FFD700; border: 1px solid #FFD700;">
+                            <i class="fas fa-plus"></i> Add Prefix
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" class="btn btn-warning" id="cancelEditBtn" style="display: none;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Export Card -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-download"></i>
+                <span>Export Data</span>
+            </div>
+            
+            <div class="export-section">
+                <button class="btn btn-success" id="exportCSVBtn" style="flex: 1;">
+                    <i class="fas fa-file-csv"></i> CSV
+                </button>
+                <button class="btn btn-warning" id="exportJSONBtn" style="flex: 1;">
+                    <i class="fas fa-file-code"></i> JSON
+                </button>
+            </div>
+            
+            <!-- Danger Zone -->
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #333333;">
+                <button class="btn btn-danger" id="deleteAllBtn" style="width: 100%;">
+                    <i class="fas fa-trash"></i> Delete All Methods
+                </button>
+            </div>
+        </div>
+        
+        <!-- Payment Methods List Card -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-list"></i>
+                <span>Payment Methods</span>
+            </div>
+            
+            <div class="payment-methods-list" id="paymentMethodsList">
+                <!-- Dynamic content -->
+                <div class="empty-state">
+                    <i class="fas fa-database"></i>
+                    <p>No payment methods</p>
+                    <small>Add your first method above</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== FIREBASE CONFIG (update with your Botswana project if needed) ==========
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIX3aQq3VEBq269Jdrk77CefNttqAR51s",
+            authDomain: "mozambique-newhope.firebaseapp.com",
+            databaseURL: "https://mozambique-newhope-default-rtdb.firebaseio.com",
+            projectId: "mozambique-newhope",
+            storageBucket: "mozambique-newhope.firebasestorage.app",
+            messagingSenderId: "133563964959",
+            appId: "1:133563964959:web:d3f183b721d540140f7f2a",
+            measurementId: "G-FY6CNVX6ZK"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        
+        // ========== GLOBAL VARIABLES ==========
+        let currentUser = null;
+        let paymentMethods = {};
+        let editingKey = null;
+        
+        // Botswana network options
+        const botswanaNetworks = ["Mascom MyZaka", "Orange Money", "BeMobile Money"];
+        
+        // ========== UI HELPERS ==========
+        function showLoading(show, message = 'Processing...') {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+            document.getElementById('loadingMessage').textContent = message;
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // ========== CHECK ADMIN AUTH ==========
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                
+                // Check if admin
+                const adminSnapshot = await database.ref('admins/' + user.uid).once('value');
+                if (!adminSnapshot.exists()) {
+                    showToast('Unauthorized access', 'error');
+                    setTimeout(() => window.location.href = 'index.html', 1500);
+                    return;
+                }
+                
+                loadPaymentMethods();
+            } else {
+                window.location.href = 'admin-login.html';
+            }
+        });
+        
+        // ========== LOAD PAYMENT METHODS ==========
+        async function loadPaymentMethods() {
+            showLoading(true, 'Loading...');
+            try {
+                const snapshot = await database.ref('paymentMethods').once('value');
+                if (snapshot.exists()) {
+                    paymentMethods = snapshot.val();
+                } else {
+                    paymentMethods = {};
+                }
+                
+                updateStats();
+                renderPaymentMethodsList();
+                showLoading(false);
+            } catch (error) {
+                console.error(error);
+                showToast('Error: ' + error.message, 'error');
+                showLoading(false);
+            }
+        }
+        
+        // ========== UPDATE STATISTICS ==========
+        function updateStats() {
+            const networks = Object.keys(paymentMethods).length;
+            document.getElementById('totalNetworks').textContent = networks;
+            
+            let totalNumbers = 0;
+            let totalPrefixes = 0;
+            
+            Object.values(paymentMethods).forEach(method => {
+                if (method.number) totalNumbers++;
+                if (method.prefixes) totalPrefixes += method.prefixes.length;
+            });
+            
+            document.getElementById('totalNumbers').textContent = totalNumbers;
+            document.getElementById('totalPrefixes').textContent = totalPrefixes;
+            
+            document.getElementById('lastUpdated').innerHTML = `<i class="fas fa-clock"></i> ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+        }
+        
+        // ========== RENDER PAYMENT METHODS LIST ==========
+        function renderPaymentMethodsList() {
+            const container = document.getElementById('paymentMethodsList');
+            
+            if (Object.keys(paymentMethods).length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-database"></i>
+                        <p>No payment methods</p>
+                        <small>Add your first method above</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            Object.keys(paymentMethods).sort().forEach(key => {
+                const method = paymentMethods[key];
+                const prefixes = method.prefixes || [];
+                const prefixHtml = prefixes.map(p => `<span class="prefix-badge"><i class="fas fa-hashtag"></i> ${p}</span>`).join('');
+                
+                html += `
+                    <div class="method-item">
+                        <div class="method-header">
+                            <div class="method-name">
+                                <i class="${method.icon || 'fas fa-wallet'}" style="color: ${method.color || '#FFD700'};"></i>
+                                ${key}
+                            </div>
+                            <div class="method-actions">
+                                <button class="btn" onclick="editMethod('${key}')" style="background: rgba(255,215,0,0.1); color: #FFD700; border: 1px solid rgba(255,215,0,0.3);">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn" onclick="deleteMethod('${key}')" style="background: rgba(220,53,69,0.1); color: #DC3545; border: 1px solid rgba(220,53,69,0.3);">
+                                    <i class="fas fa-trash"></i> Del
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                            <div style="flex: 1;">
+                                <div style="font-size: 12px; color: #FFED4E;">Number</div>
+                                <div style="font-size: 18px; font-weight: 700; margin-top: 4px; color: #FFFFFF;">${method.number || '-'}</div>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 12px; color: #FFED4E;">Account</div>
+                                <div style="font-size: 15px; margin-top: 4px; word-break: break-word;">${method.accountName || '-'}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 16px;">
+                            <div style="font-size: 12px; color: #FFED4E; margin-bottom: 8px;">Prefixes</div>
+                            <div>${prefixHtml || '<span style="color: #666;">No prefixes</span>'}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // ========== PREFIXES MANAGEMENT ==========
+        document.getElementById('addPrefixBtn').addEventListener('click', function() {
+            const container = document.getElementById('prefixesList');
+            const div = document.createElement('div');
+            div.className = 'prefix-input-group';
+            div.innerHTML = `
+                <input type="text" class="prefix-input" placeholder="e.g. 71" maxlength="2" inputmode="numeric">
+                <button type="button" class="btn remove-prefix" style="padding: 14px; background: rgba(220,53,69,0.1); color: #DC3545; min-height: 50px;">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(div);
+            
+            div.querySelector('.remove-prefix').addEventListener('click', function() {
+                div.remove();
+            });
+        });
+        
+        // Remove prefix delegation
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-prefix') || e.target.closest('.remove-prefix')) {
+                const btn = e.target.classList.contains('remove-prefix') ? e.target : e.target.closest('.remove-prefix');
+                btn.closest('.prefix-input-group').remove();
+            }
+        });
+        
+        // ========== COLLECT PREFIXES ==========
+        function collectPrefixes() {
+            const inputs = document.querySelectorAll('.prefix-input');
+            const prefixes = [];
+            inputs.forEach(input => {
+                const value = input.value.trim();
+                if (value && /^\d{2}$/.test(value)) {
+                    prefixes.push(value);
+                }
+            });
+            return prefixes;
+        }
+        
+        // ========== SAVE PAYMENT METHOD ==========
+        document.getElementById('paymentMethodForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const networkName = document.getElementById('networkName').value;
+            const paymentNumber = document.getElementById('paymentNumber').value.trim();
+            const accountName = document.getElementById('accountName').value.trim();
+            const icon = document.getElementById('icon').value.trim() || 'fas fa-mobile-alt';
+            const color = document.getElementById('color').value.trim() || '#FFD700';
+            const prefixes = collectPrefixes();
+            const editKey = document.getElementById('editKey').value;
+            
+            if (!networkName) {
+                showToast('Please select a network', 'error');
+                return;
+            }
+            
+            if (!paymentNumber || !/^\d{8}$/.test(paymentNumber)) {
+                showToast('Valid 8-digit number required (e.g., 71234567)', 'error');
+                return;
+            }
+            
+            if (!accountName) {
+                showToast('Account name required', 'error');
+                return;
+            }
+            
+            if (prefixes.length === 0) {
+                showToast('At least one prefix required', 'error');
+                return;
+            }
+            
+            showLoading(true, 'Saving...');
+            
+            try {
+                const paymentData = {
+                    number: paymentNumber,
+                    accountName: accountName,
+                    prefixes: prefixes,
+                    icon: icon,
+                    color: color
+                };
+                
+                if (editKey) {
+                    // If editing, preserve the original key (network name)
+                    await database.ref(`paymentMethods/${editKey}`).set(paymentData);
+                    showToast(`Updated: ${editKey}`, 'success');
+                } else {
+                    // New entry – use selected network name as key
+                    await database.ref(`paymentMethods/${networkName}`).set(paymentData);
+                    showToast(`Added: ${networkName}`, 'success');
+                }
+                
+                resetForm();
+                await loadPaymentMethods();
+                
+            } catch (error) {
+                console.error(error);
+                showToast('Error: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        // ========== EDIT METHOD ==========
+        window.editMethod = function(key) {
+            const method = paymentMethods[key];
+            if (!method) return;
+            
+            editingKey = key;
+            document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Method';
+            document.getElementById('formIcon').className = 'fas fa-edit';
+            document.getElementById('editKey').value = key;
+            
+            // Set the dropdown to the network name (key)
+            const networkSelect = document.getElementById('networkName');
+            if (botswanaNetworks.includes(key)) {
+                networkSelect.value = key;
+            } else {
+                // If key is not in the dropdown (e.g., legacy data), set it to empty and maybe show warning
+                networkSelect.value = '';
+                showToast('Network not in dropdown, please re-add', 'warning');
+            }
+            // Disable network dropdown when editing? Probably allow change but careful: key would change.
+            // We'll leave it enabled but note that changing network will overwrite under new key.
+            // We'll keep it enabled.
+            
+            document.getElementById('paymentNumber').value = method.number || '';
+            document.getElementById('accountName').value = method.accountName || '';
+            document.getElementById('icon').value = method.icon || 'fas fa-mobile-alt';
+            document.getElementById('color').value = method.color || '#FFD700';
+            
+            // Clear and add prefixes
+            const container = document.getElementById('prefixesList');
+            container.innerHTML = '';
+            
+            if (method.prefixes && method.prefixes.length > 0) {
+                method.prefixes.forEach(prefix => {
+                    const div = document.createElement('div');
+                    div.className = 'prefix-input-group';
+                    div.innerHTML = `
+                        <input type="text" class="prefix-input" placeholder="e.g. 71" maxlength="2" inputmode="numeric" value="${prefix}">
+                        <button type="button" class="btn remove-prefix" style="padding: 14px; background: rgba(220,53,69,0.1); color: #DC3545; min-height: 50px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    container.appendChild(div);
+                    
+                    div.querySelector('.remove-prefix').addEventListener('click', function() {
+                        div.remove();
+                    });
+                });
+            } else {
+                // Add empty prefix
+                const div = document.createElement('div');
+                div.className = 'prefix-input-group';
+                div.innerHTML = `
+                    <input type="text" class="prefix-input" placeholder="e.g. 71" maxlength="2" inputmode="numeric">
+                    <button type="button" class="btn remove-prefix" style="padding: 14px; background: rgba(220,53,69,0.1); color: #DC3545; min-height: 50px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            }
+            
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Update';
+            document.getElementById('cancelEditBtn').style.display = 'flex';
+            
+            // Scroll to form
+            document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+        };
+        
+        // ========== DELETE METHOD ==========
+        window.deleteMethod = async function(key) {
+            if (!confirm(`Delete "${key}"?`)) return;
+            
+            showLoading(true, 'Deleting...');
+            
+            try {
+                await database.ref(`paymentMethods/${key}`).remove();
+                showToast(`Deleted: ${key}`, 'success');
+                await loadPaymentMethods();
+                
+                if (editingKey === key) {
+                    resetForm();
+                }
+            } catch (error) {
+                console.error(error);
+                showToast('Error: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        };
+        
+        // ========== DELETE ALL ==========
+        document.getElementById('deleteAllBtn').addEventListener('click', async function() {
+            if (Object.keys(paymentMethods).length === 0) {
+                showToast('No methods to delete', 'error');
+                return;
+            }
+            
+            if (!confirm('⚠️ Delete ALL payment methods? This cannot be undone!')) {
+                return;
+            }
+            
+            showLoading(true, 'Deleting all...');
+            
+            try {
+                await database.ref('paymentMethods').remove();
+                showToast('All methods deleted', 'success');
+                await loadPaymentMethods();
+                resetForm();
+            } catch (error) {
+                console.error(error);
+                showToast('Error: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        // ========== RESET FORM ==========
+        function resetForm() {
+            editingKey = null;
+            document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add Payment Method';
+            document.getElementById('formIcon').className = 'fas fa-plus-circle';
+            document.getElementById('editKey').value = '';
+            document.getElementById('networkName').value = '';
+            document.getElementById('paymentNumber').value = '';
+            document.getElementById('accountName').value = '';
+            document.getElementById('icon').value = 'fas fa-mobile-alt';
+            document.getElementById('color').value = '#FFD700';
+            
+            // Reset prefixes to one empty field
+            const container = document.getElementById('prefixesList');
+            container.innerHTML = `
+                <div class="prefix-input-group">
+                    <input type="text" class="prefix-input" placeholder="e.g. 71" maxlength="2" inputmode="numeric">
+                    <button type="button" class="btn remove-prefix" style="padding: 14px; background: rgba(220,53,69,0.1); color: #DC3545; min-height: 50px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Save';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+        }
+        
+        document.getElementById('cancelEditBtn').addEventListener('click', resetForm);
+        
+        // ========== EXPORT CSV ==========
+        document.getElementById('exportCSVBtn').addEventListener('click', function() {
+            if (Object.keys(paymentMethods).length === 0) {
+                showToast('No data to export', 'error');
+                return;
+            }
+            
+            let csv = 'Network,Number,AccountName,Prefixes,Icon,Color\n';
+            
+            Object.keys(paymentMethods).forEach(key => {
+                const method = paymentMethods[key];
+                const prefixes = method.prefixes ? method.prefixes.join(',') : '';
+                csv += `"${key}",${method.number || ''},"${method.accountName || ''}","${prefixes}",${method.icon || 'fas fa-mobile-alt'},${method.color || '#FFD700'}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `payment-methods-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('CSV exported', 'success');
+        });
+        
+        // ========== EXPORT JSON ==========
+        document.getElementById('exportJSONBtn').addEventListener('click', function() {
+            if (Object.keys(paymentMethods).length === 0) {
+                showToast('No data to export', 'error');
+                return;
+            }
+            
+            const jsonStr = JSON.stringify(paymentMethods, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `payment-methods-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('JSON exported', 'success');
+        });
+        
+        // ========== LOGOUT ==========
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            showLoading(true, 'Logging out...');
+            try {
+                await auth.signOut();
+                window.location.href = 'admin-login.html';
+            } catch (error) {
+                console.error(error);
+                showToast('Error: ' + error.message, 'error');
+                showLoading(false);
+            }
+        });
+    </script>
+</body>
+</html>

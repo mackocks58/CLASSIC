@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 - Page Not Found</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Poppins',sans-serif;
+}
+
+body{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:linear-gradient(135deg,#ff4e50,#1f1c2c);
+overflow:hidden;
+color:white;
+text-align:center;
+}
+
+.container{
+position:relative;
+z-index:2;
+padding:20px;
+}
+
+h1{
+font-size:120px;
+letter-spacing:5px;
+animation:glitch 1s infinite;
+}
+
+@keyframes glitch{
+0%{text-shadow:5px 5px #00f,-5px -5px #f00;}
+25%{text-shadow:-5px -5px #00f,5px 5px #f00;}
+50%{text-shadow:5px -5px #00f,-5px 5px #f00;}
+75%{text-shadow:-5px 5px #00f,5px -5px #f00;}
+100%{text-shadow:5px 5px #00f,-5px -5px #f00;}
+}
+
+p{
+font-size:20px;
+margin-bottom:30px;
+opacity:0.9;
+}
+
+/* Button */
+.btn{
+display:inline-block;
+padding:14px 35px;
+background:white;
+color:#ff4e50;
+border:none;
+border-radius:30px;
+font-weight:bold;
+cursor:pointer;
+transition:0.3s;
+font-size:16px;
+}
+
+.btn:hover{
+background:#000;
+color:#fff;
+transform:scale(1.1);
+}
+
+/* Cartoon Robot */
+.robot{
+width:120px;
+height:120px;
+margin:30px auto;
+position:relative;
+animation:float 3s ease-in-out infinite;
+}
+
+.robot .head{
+width:100%;
+height:80px;
+background:#fff;
+border-radius:20px;
+position:relative;
+}
+
+.robot .eye{
+width:15px;
+height:15px;
+background:#ff4e50;
+border-radius:50%;
+position:absolute;
+top:30px;
+animation:blink 2s infinite;
+}
+
+.robot .eye.left{left:30px;}
+.robot .eye.right{right:30px;}
+
+.robot .body{
+width:80px;
+height:60px;
+background:#fff;
+margin:10px auto;
+border-radius:15px;
+}
+
+@keyframes float{
+0%,100%{transform:translateY(0);}
+50%{transform:translateY(-15px);}
+}
+
+@keyframes blink{
+0%,90%,100%{height:15px;}
+95%{height:3px;}
+}
+
+/* Floating Particles */
+.circle{
+position:absolute;
+border-radius:50%;
+background:rgba(255,255,255,0.1);
+animation:move 10s linear infinite;
+}
+
+@keyframes move{
+0%{transform:translateY(100vh) scale(0);}
+100%{transform:translateY(-10vh) scale(1);}
+}
+
+/* Responsive */
+@media(max-width:600px){
+h1{font-size:80px;}
+p{font-size:16px;}
+.robot{transform:scale(0.8);}
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>404</h1>
+
+<div class="robot">
+<div class="head">
+<div class="eye left"></div>
+<div class="eye right"></div>
+</div>
+<div class="body"></div>
+</div>
+
+<p>Oops! The page you're looking for doesn't exist.</p>
+
+<button class="btn" onclick="goBack()">Go Back</button>
+</div>
+
+<script>
+
+/* Floating particles generator */
+for(let i=0;i<25;i++){
+let circle=document.createElement("div");
+circle.classList.add("circle");
+circle.style.width=Math.random()*20+10+"px";
+circle.style.height=circle.style.width;
+circle.style.left=Math.random()*100+"vw";
+circle.style.animationDuration=Math.random()*5+5+"s";
+document.body.appendChild(circle);
+}
+
+/* Smart Back Button */
+function goBack(){
+if(document.referrer !== ""){
+history.back();
+}else{
+window.location.href="/";
+}
+}
+
+</script>
+
+</body>
+</html>

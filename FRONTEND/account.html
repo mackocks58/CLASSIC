@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>CLASSIC MAXIMIZE • Account</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <style>
+        /* ----- GLOBAL WHITE/BLUE THEME (consistent with dashboard) ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        body {
+            background-color: #f0f8ff;  /* soft blue-white */
+            color: #023e8a;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        body.loaded {
+            overflow: visible;
+            opacity: 1;
+        }
+
+        /* loading spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .dotted-spinner {
+            width: 70px; height: 70px;
+            border: 5px dotted #0096c7;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1.2s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            margin-top: 20px;
+            color: #0096c7;
+            font-weight: 600;
+        }
+
+        /* ----- FIXED TOP BAR (slideshow + balances) ----- */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 100, 200, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            animation: bgSlide 24s infinite ease-in-out;
+            border-bottom: 3px solid #48cae4;
+            background-size: cover;
+            background-position: center;
+        }
+
+        @keyframes bgSlide {
+            0% { background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?w=600&auto=format'); }
+            25% { background-image: url('https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&auto=format'); }
+            50% { background-image: url('https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&auto=format'); }
+            75% { background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format'); }
+            100% { background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?w=600&auto=format'); }
+        }
+
+        .top-bar-content {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: space-between;
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 8px 18px;
+            border-radius: 50px;
+            box-shadow: 0 2px 8px rgba(0,119,190,0.2);
+        }
+
+        .app-title {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: #023e8a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .app-title i { color: #0096c7; font-size: 1.8rem; }
+
+        .top-balances {
+            display: flex;
+            gap: 20px;
+            background: rgba(255,255,255,0.5);
+            padding: 5px 18px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            font-weight: 600;
+        }
+        .balance-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .balance-item i { font-size: 1.3rem; color: #0077b6; }
+        .balance-value {
+            background: white;
+            padding: 4px 12px;
+            border-radius: 40px;
+            color: #03045e;
+            font-weight: 700;
+            box-shadow: inset 0 1px 3px #caf0f8;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+        }
+        .bell-icon {
+            font-size: 1.7rem;
+            color: #023e8a;
+            background: rgba(255,255,255,0.7);
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .notification-badge {
+            position: absolute;
+            top: -4px; right: -4px;
+            background: #ef233c;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            min-width: 20px; height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+        }
+        .music-icon {
+            font-size: 1.8rem;
+            color: #0077b6;
+            background: rgba(255,255,255,0.7);
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ---------- NOTIFICATION DROPDOWN ---------- */
+        .notification-dropdown {
+            position: absolute;
+            top: 70px; right: 10px;
+            width: 340px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -8px #0077b6;
+            border: 1px solid #90e0ef;
+            display: none;
+            z-index: 1100;
+            overflow: hidden;
+        }
+        .notification-dropdown.active { display: block; }
+        .dropdown-header { padding: 18px; background: #caf0f8; color: #03045e; font-weight: 700; }
+        .dropdown-body { max-height: 360px; overflow-y: auto; }
+        .dropdown-item {
+            padding: 14px; border-bottom: 1px solid #ade8f4; cursor: pointer;
+            transition: 0.2s;
+        }
+        .dropdown-item:hover { background: #e2f0fa; }
+        .dropdown-item.unread { background: #e6f4ff; border-left: 5px solid #0096c7; }
+        .item-title { font-weight: 600; color: #023e8a; margin-bottom: 4px; }
+        .item-message { font-size: 0.85rem; color: #2d6a9f; }
+        .item-time { font-size: 0.7rem; color: #6c757d; margin-top: 6px; }
+        .dropdown-footer { padding: 14px; text-align: center; background: #f8f9ff; }
+        .view-all-link { color: #0077b6; text-decoration: none; font-weight: 600; }
+
+        /* ----- MAIN CONTENT (scrollable) ----- */
+        .main-content {
+            margin-top: 90px;
+            margin-bottom: 75px;
+            padding: 16px 16px 25px;
+            overflow-y: auto;
+            background: #f0f8ff;
+            min-height: 60vh;
+        }
+
+        /* ----- PAGE STYLES (My Account) – white/blue theme ----- */
+        .profile-header {
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            margin-bottom: 25px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,150,199,0.1);
+            border: 1px solid #90e0ef;
+        }
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0096c7, #48cae4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+            border: 4px solid white;
+            box-shadow: 0 4px 10px #a2d2ff;
+        }
+        .profile-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #023e8a;
+        }
+        .profile-phone {
+            font-size: 18px;
+            color: #0077b6;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #90e0ef;
+            box-shadow: 0 4px 10px #caf0f8;
+        }
+        .stat-icon {
+            font-size: 26px;
+            color: #0096c7;
+            margin-bottom: 10px;
+        }
+        .stat-number {
+            font-size: 26px;
+            font-weight: bold;
+            color: #023e8a;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #2d6a9f;
+        }
+
+        .details-card, .referral-card {
+            background: white;
+            border-radius: 30px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid #90e0ef;
+            box-shadow: 0 4px 12px #caf0f8;
+        }
+        .details-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0077b6;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #ade8f4;
+        }
+        .detail-item:last-child { border-bottom: none; }
+        .detail-label {
+            font-weight: 500;
+            color: #2d6a9f;
+        }
+        .detail-value {
+            font-weight: 600;
+            color: #023e8a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .copy-btn {
+            background: #e2f0fa;
+            border: 1px solid #48cae4;
+            color: #0077b6;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: 0.2s;
+        }
+        .copy-btn:hover {
+            background: #48cae4;
+            color: white;
+        }
+        .copy-btn.copied {
+            background: #00b4d8;
+            color: white;
+            border-color: #0096c7;
+        }
+
+        .referral-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            align-items: center;
+        }
+        .referral-left { flex: 1; min-width: 280px; }
+        .referral-right { flex-shrink: 0; text-align: center; }
+        .referral-code {
+            background: #e2f0fa;
+            border: 2px solid #0096c7;
+            padding: 15px;
+            border-radius: 16px;
+            font-size: 26px;
+            font-weight: bold;
+            color: #023e8a;
+            margin: 15px 0;
+        }
+        .referral-url {
+            background: #f0f8ff;
+            padding: 12px;
+            border-radius: 16px;
+            word-break: break-all;
+            border: 1px dashed #48cae4;
+            font-size: 14px;
+            color: #023e8a;
+        }
+        .qr-code-container {
+            background: white;
+            padding: 15px;
+            border-radius: 20px;
+            display: inline-block;
+            border: 3px solid #48cae4;
+            box-shadow: 0 8px 16px #a2d2ff;
+        }
+        #qrCodeCanvas {
+            display: block;
+            width: 200px;
+            height: 200px;
+        }
+        .qr-label {
+            color: #0077b6;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .qr-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .download-btn {
+            background: #e2f0fa;
+            border: 1px solid #0096c7;
+            color: #0077b6;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .actions-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .action-btn {
+            background: white;
+            border: 1px solid #90e0ef;
+            border-radius: 60px;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 8px #caf0f8;
+        }
+        .action-btn:hover {
+            border-color: #0096c7;
+            transform: translateY(-3px);
+            background: #e2f0fa;
+        }
+        .action-btn i { font-size: 28px; color: #0096c7; }
+        .action-btn span { font-weight: 600; color: #023e8a; }
+
+        /* FIXED BOTTOM NAV */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background: white;
+            box-shadow: 0 -6px 16px rgba(0, 136, 204, 0.1);
+            border-top: 2px solid #90e0ef;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 8px;
+            z-index: 1000;
+        }
+        .nav-icon {
+            font-size: 2rem;
+            color: #2d6a9f;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 40px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .nav-icon.active {
+            background: #0096c7;
+            color: white;
+            box-shadow: 0 4px 12px #48cae4;
+        }
+        .nav-icon a {
+            color: inherit;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        /* welcome popup (same as before) */
+        .welcome-popup {
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background: rgba(0,50,100,0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .welcome-popup.active { display: flex; }
+        .welcome-modal {
+            background: white;
+            border-radius: 40px;
+            width: 90%; max-width: 380px;
+            border: 4px solid #48cae4;
+            text-align: center;
+            padding: 25px 15px;
+        }
+        .welcome-icon { font-size: 4rem; color: #0096c7; }
+        .welcome-title { color: #023e8a; font-weight: 700; }
+        .notification-count { font-size: 3rem; font-weight: 800; color: #0077b6; }
+        .ok-btn {
+            background: #0096c7; border: none; color: white;
+            padding: 14px 40px; border-radius: 60px; font-size: 1.2rem;
+            margin-top: 15px; font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- loading spinner -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="dotted-spinner"></div>
+        <div class="loading-text">loading ...</div>
+    </div>
+
+    <!-- FIXED TOP BAR (constant) -->
+    <header class="top-bar">
+        <div class="top-bar-content">
+            <div class="app-title">
+                <i class="fas fa-water"></i> CLASSIC MAXIMIZE
+            </div>
+            <div class="top-balances">
+                <div class="balance-item">
+                    <i class="fas fa-wallet"></i>
+                    <span class="balance-value" id="accountBalance">0 BWP</span>
+                </div>
+                <div class="balance-item">
+                    <i class="fas fa-coins"></i>
+                    <span class="balance-value" id="cumulativeBalance">0 BWP</span>
+                </div>
+            </div>
+            <div class="top-actions">
+                <div class="notification-bell" id="notificationBell">
+                    <div class="bell-icon"><i class="fas fa-bell"></i></div>
+                    <div class="notification-badge" id="notificationBadge">0</div>
+                    <div class="notification-dropdown" id="notificationDropdown">
+                        <div class="dropdown-header">🔔 notifications</div>
+                        <div class="dropdown-body" id="notificationDropdownBody">loading...</div>
+                        <div class="dropdown-footer">
+                            <a href="notifications.html" class="view-all-link">view all <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="music-icon"><i class="fas fa-music"></i></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT (dynamic area) -->
+    <main class="main-content" id="mainContent">
+        <!-- account page will be injected here by router -->
+    </main>
+
+    <!-- FIXED BOTTOM NAV -->
+    <nav class="bottom-nav" id="bottomNav">
+        <div class="nav-icon" data-page="home"><a href="#home"><i class="fas fa-home"></i></a></div>
+        <div class="nav-icon active" data-page="account"><a href="#account"><i class="fas fa-user-circle"></i></a></div>
+        <div class="nav-icon" data-page="more"><a href="#more"><i class="fas fa-th-large"></i></a></div>
+        <div class="nav-icon" data-page="tasks"><a href="#tasks"><i class="fas fa-tasks"></i></a></div>
+    </nav>
+
+    <!-- Welcome popup -->
+    <div class="welcome-popup" id="welcomePopup">
+        <div class="welcome-modal">
+            <div class="welcome-icon"><i class="fas fa-envelope-open-text"></i></div>
+            <h2 class="welcome-title">NEW NOTIFICATIONS</h2>
+            <p>You have</p>
+            <div class="notification-count" id="popupNotificationCount">0</div>
+            <p>unread messages</p>
+            <button class="ok-btn" id="closePopupBtn">OK, got it</button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase config (same)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIX3aQq3VEBq269Jdrk77CefNttqAR51s",
+            authDomain: "mozambique-newhope.firebaseapp.com",
+            databaseURL: "https://mozambique-newhope-default-rtdb.firebaseio.com",
+            projectId: "mozambique-newhope",
+            storageBucket: "mozambique-newhope.firebasestorage.app",
+            messagingSenderId: "133563964959",
+            appId: "1:133563964959:web:d3f183b721d540140f7f2a",
+            measurementId: "G-FY6CNVX6ZK"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Global variables for notifications (same as before)
+        let currentUser = null, userId = null;
+        let notifications = [], currentNotificationIndex = 0;
+        let unreadCount = 0;
+
+        // helper format
+        function formatAmount(amount) {
+            return (amount || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " BWP";
+        }
+
+        // Update top balances
+        function updateBalances(userData) {
+            document.getElementById('accountBalance').innerText = formatAmount(userData.balance || 0);
+            document.getElementById('cumulativeBalance').innerText = formatAmount(userData.deposited || 0);
+        }
+
+        // notification badge & dropdown (simplified)
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notificationBadge');
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.style.display = 'flex';
+                document.getElementById('popupNotificationCount').textContent = unreadCount;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function renderNotificationDropdown(items) {
+            const container = document.getElementById('notificationDropdownBody');
+            if (!items || items.length === 0) {
+                container.innerHTML = `<div class="dropdown-item">✨ no notifications</div>`;
+                return;
+            }
+            let html = '';
+            items.slice(0,5).forEach(n => {
+                const date = new Date(n.timestamp).toLocaleString();
+                html += `<div class="dropdown-item ${n.read ? '' : 'unread'}">
+                    <div class="item-title">${n.title || 'notification'}</div>
+                    <div class="item-message">${(n.message||'').substring(0,60)}</div>
+                    <div class="item-time">${date}</div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        async function loadUserNotifications() {
+            try {
+                userId = currentUser.uid;
+                const readSnap = await database.ref(`userReadAnnouncements/${userId}`).once('value');
+                const readAnnouncements = readSnap.val() || {};
+
+                const annSnap = await database.ref('announcements').once('value');
+                let allAnnouncements = [];
+                if (annSnap.exists()) {
+                    annSnap.forEach( child => {
+                        let a = child.val(); a.id = child.key; a.type='announcement';
+                        a.read = readAnnouncements[a.id] ? true : false;
+                        allAnnouncements.push(a);
+                    });
+                }
+
+                const notifSnap = await database.ref(`userNotifications/${userId}`).once('value');
+                let userNotifications = [];
+                if (notifSnap.exists()) {
+                    notifSnap.forEach(c => { let n = c.val(); n.id = c.key; n.type='withdrawal'; userNotifications.push(n); });
+                }
+
+                const combined = [...allAnnouncements, ...userNotifications].sort((a,b)=> (b.timestamp||0)-(a.timestamp||0));
+                unreadCount = combined.filter(n => !n.read).length;
+                updateNotificationBadge();
+                renderNotificationDropdown(combined);
+                if (unreadCount>0) document.getElementById('welcomePopup').classList.add('active');
+            } catch (e) { console.warn(e); }
+        }
+
+        // ---------- ACCOUNT PAGE RENDER FUNCTION ----------
+        function renderAccountPage() {
+            const main = document.getElementById('mainContent');
+            // HTML template for account page (without outer header)
+            main.innerHTML = `
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profileAvatar">U</div>
+                    <div class="profile-name" id="profileName">Loading...</div>
+                    <div class="profile-phone" id="profilePhone">Loading...</div>
+                </div>
+
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+                        <div class="stat-number" id="balanceAmount">0 BWP</div>
+                        <div class="stat-label">Balance</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="stat-number" id="profitAmount">0 BWP</div>
+                        <div class="stat-label">Profit</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+                        <div class="stat-number" id="depositedAmount">0 BWP</div>
+                        <div class="stat-label">Deposited</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                        <div class="stat-number" id="earningsAmount">0 BWP</div>
+                        <div class="stat-label">Earnings</div>
+                    </div>
+                </div>
+
+                <div class="details-card">
+                    <div class="details-title"><i class="fas fa-user-circle"></i> Account Details</div>
+                    <div class="detail-item">
+                        <div class="detail-label">Full Name</div>
+                        <div class="detail-value"><span id="detailName">Loading...</span><button class="copy-btn" data-copy="detailName"><i class="fas fa-copy"></i> Copy</button></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Phone</div>
+                        <div class="detail-value"><span id="detailPhone">Loading...</span><button class="copy-btn" data-copy="detailPhone"><i class="fas fa-copy"></i> Copy</button></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Email</div>
+                        <div class="detail-value"><span id="detailEmail">Loading...</span><button class="copy-btn" data-copy="detailEmail"><i class="fas fa-copy"></i> Copy</button></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">User ID</div>
+                        <div class="detail-value"><span id="detailUserId">Loading...</span><button class="copy-btn" data-copy="detailUserId"><i class="fas fa-copy"></i> Copy</button></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Joined</div>
+                        <div class="detail-value"><span id="detailJoinDate">Loading...</span></div>
+                    </div>
+                </div>
+
+                <div class="referral-card">
+                    <div class="details-title"><i class="fas fa-share-alt"></i> Referral Program</div>
+                    <div class="referral-content">
+                        <div class="referral-left">
+                            <div class="detail-item">
+                                <div class="detail-label">Your Code</div>
+                                <div class="detail-value"><span id="referralCode">Loading...</span><button class="copy-btn" data-copy="referralCode"><i class="fas fa-copy"></i> Copy</button></div>
+                            </div>
+                            <div class="referral-code" id="referralCodeDisplay">Loading...</div>
+                            <div class="referral-url" id="referralLink">Loading...</div>
+                            <button class="copy-btn" style="width:100%; margin-top:10px;" data-copy="referralLink"><i class="fas fa-link"></i> Copy Referral Link</button>
+                        </div>
+                        <div class="referral-right">
+                            <div class="qr-code-container">
+                                <canvas id="qrCodeCanvas" width="200" height="200"></canvas>
+                            </div>
+                            <div class="qr-label">Scan to join</div>
+                            <div class="qr-actions">
+                                <button class="download-btn" id="downloadQRBtn"><i class="fas fa-download"></i> Download</button>
+                                <button class="copy-btn" id="shareQRBtn"><i class="fas fa-share"></i> Share</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-container">
+                    <div class="action-btn" id="editProfileBtn"><i class="fas fa-user-edit"></i><span>Bind Account</span></div>
+                    <div class="action-btn" id="changePasswordBtn"><i class="fas fa-key"></i><span>Change Password</span></div>
+                    <div class="action-btn" id="withdrawBtn"><i class="fas fa-money-bill-wave"></i><span>Withdraw</span></div>
+                    <div class="action-btn" id="depositBtn"><i class="fas fa-plus-circle"></i><span>Deposit</span></div>
+                </div>
+            `;
+
+            // Now load profile data into these elements
+            loadProfileData();
+        }
+
+        // Profile data loading function (called after DOM is ready)
+        async function loadProfileData() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            try {
+                const snapshot = await database.ref(`users/${user.uid}`).once('value');
+                const userData = snapshot.val();
+                if (!userData) return;
+
+                // Update top balances (already listening, but also here)
+                updateBalances(userData);
+
+                // Helper
+                const format = (amt) => formatAmount(amt);
+                const getInitials = (name) => (name || 'U').split(' ').map(p=>p[0]).join('').toUpperCase().substring(0,2) || 'U';
+                const email = `${userData.phone.replace(/\D/g, '')}@NewHope.com`;
+                const displayName = userData.fullName || userData.phone || 'User';
+
+                document.getElementById('profileAvatar').textContent = getInitials(displayName);
+                document.getElementById('profileName').textContent = displayName;
+                document.getElementById('profilePhone').textContent = userData.phone || '';
+
+                document.getElementById('balanceAmount').textContent = format(userData.balance || 0);
+                document.getElementById('profitAmount').textContent = format(userData.profit || 0);
+                document.getElementById('depositedAmount').textContent = format(userData.deposited || 0);
+                document.getElementById('earningsAmount').textContent = format(userData.totalEarnings || 0);
+
+                document.getElementById('detailName').textContent = displayName;
+                document.getElementById('detailPhone').textContent = userData.phone || '';
+                document.getElementById('detailEmail').textContent = email;
+                document.getElementById('detailUserId').textContent = user.uid.substring(0,8)+'...';
+                document.getElementById('detailJoinDate').textContent = new Date(userData.signupDate || Date.now()).toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+
+                const referralCode = userData.referralCode || 'NEWHOPE';
+                document.getElementById('referralCode').textContent = referralCode;
+                document.getElementById('referralCodeDisplay').textContent = referralCode;
+                const baseUrl = window.location.origin;
+                const referralLink = `${baseUrl}?ref=${referralCode}`;
+                document.getElementById('referralLink').textContent = referralLink;
+
+                // Set data-text attributes for copy
+                document.getElementById('detailName').setAttribute('data-text', displayName);
+                document.getElementById('detailPhone').setAttribute('data-text', userData.phone || '');
+                document.getElementById('detailEmail').setAttribute('data-text', email);
+                document.getElementById('detailUserId').setAttribute('data-text', user.uid);
+                document.getElementById('referralCode').setAttribute('data-text', referralCode);
+                document.getElementById('referralLink').setAttribute('data-text', referralLink);
+
+                // Generate QR
+                setTimeout(() => generateQRCode(referralLink), 300);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // QR code functions (from original)
+        function generateQRCode(text) {
+            const canvas = document.getElementById('qrCodeCanvas');
+            if (!canvas) return;
+            try {
+                if (typeof qrcode !== 'undefined') {
+                    const qr = qrcode(0, 'H');
+                    qr.addData(text);
+                    qr.make();
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 200; canvas.height = 200;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0,0,200,200);
+                    const moduleCount = qr.getModuleCount();
+                    const cellSize = 200 / moduleCount;
+                    ctx.fillStyle = '#000000';
+                    for (let row=0; row<moduleCount; row++) {
+                        for (let col=0; col<moduleCount; col++) {
+                            if (qr.isDark(row, col)) {
+                                ctx.fillRect(col*cellSize, row*cellSize, cellSize, cellSize);
+                            }
+                        }
+                    }
+                } else {
+                    // fallback
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0,0,200,200);
+                    ctx.fillStyle = '#000000';
+                    ctx.font = '14px Arial';
+                    ctx.fillText('CLASSIC MAXIMIZE', 50, 100);
+                }
+            } catch (e) {}
+        }
+
+        // copy functionality
+        function setupCopyListeners() {
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.removeEventListener('click', copyHandler);
+                btn.addEventListener('click', copyHandler);
+            });
+        }
+        function copyHandler(e) {
+            const btn = e.currentTarget;
+            const targetId = btn.getAttribute('data-copy');
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            const text = target.getAttribute('data-text') || target.textContent;
+            navigator.clipboard.writeText(text.trim()).then(() => {
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = original;
+                    btn.classList.remove('copied');
+                }, 1500);
+            }).catch(() => {});
+        }
+
+        // SPA Router
+        function showPage(page) {
+            const main = document.getElementById('mainContent');
+            if (page === 'account') {
+                renderAccountPage();
+                // after rendering, attach listeners for copy, buttons, QR download etc.
+                setTimeout(() => {
+                    setupCopyListeners();
+                    document.getElementById('downloadQRBtn')?.addEventListener('click', ()=>{
+                        const canvas = document.getElementById('qrCodeCanvas');
+                        if (canvas) {
+                            const link = document.createElement('a');
+                            link.download = 'NEWHOPE-QR.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                        }
+                    });
+                    document.getElementById('shareQRBtn')?.addEventListener('click', ()=>{
+                        const link = document.getElementById('referralLink').textContent;
+                        navigator.clipboard.writeText(link);
+                        alert('Referral link copied!');
+                    });
+                    document.getElementById('editProfileBtn')?.addEventListener('click', ()=>{
+                        window.location.href = 'bind.html'; // or SPA later
+                    });
+                    document.getElementById('changePasswordBtn')?.addEventListener('click', ()=>{
+                        alert('Change password coming soon');
+                    });
+                    document.getElementById('withdrawBtn')?.addEventListener('click', ()=>{
+                        window.location.href = 'withdrawal.html';
+                    });
+                    document.getElementById('depositBtn')?.addEventListener('click', ()=>{
+                        window.location.href = 'deposit.html';
+                    });
+                }, 200);
+            } else {
+                // other pages (home, more, tasks) – simplified placeholders
+                if (page === 'home') main.innerHTML = `<div class="page-card">Home page content</div>`;
+                else if (page === 'more') main.innerHTML = `<div class="page-card">More options</div>`;
+                else if (page === 'tasks') main.innerHTML = `<div class="page-card">Daily tasks</div>`;
+            }
+            // update active nav
+            document.querySelectorAll('.nav-icon').forEach(icon => {
+                icon.classList.toggle('active', icon.dataset.page === page);
+            });
+        }
+
+        // hash change
+        window.addEventListener('hashchange', () => {
+            const hash = location.hash.replace('#', '') || 'home';
+            showPage(hash);
+        });
+
+        // auth state
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user; userId = user.uid;
+                // load notifications (for badge)
+                loadUserNotifications().catch(()=>{});
+                // listen to user data to update top balances
+                database.ref('users/'+userId).on('value', snap => {
+                    if (snap.exists()) updateBalances(snap.val());
+                });
+                // show initial page based on hash
+                const initialPage = location.hash.replace('#', '') || 'account'; // default to account for testing
+                showPage(initialPage);
+                // hide loading
+                document.getElementById('loadingOverlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    document.body.classList.add('loaded');
+                }, 400);
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // notification bell dropdown
+        document.getElementById('notificationBell').addEventListener('click', (e)=>{
+            e.stopPropagation();
+            document.getElementById('notificationDropdown').classList.toggle('active');
+        });
+        document.addEventListener('click', (e)=>{
+            const dd = document.getElementById('notificationDropdown');
+            if (!dd.contains(e.target) && !e.target.closest('.notification-bell')) dd.classList.remove('active');
+        });
+        document.getElementById('closePopupBtn').addEventListener('click', ()=>{
+            document.getElementById('welcomePopup').classList.remove('active');
+        });
+        // bottom nav clicks (use SPA)
+        document.querySelectorAll('.nav-icon a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.getAttribute('href').replace('#', '');
+                location.hash = page;
+                showPage(page);
+            });
+        });
+    </script>
+    <script src="js/support-bubble.js"></script>
+</body>
+</html>

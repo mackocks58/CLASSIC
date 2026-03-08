@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>CLASSIC MAXIMIZE • Videos</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ----- WHITE/BLUE THEME (consistent with dashboard) ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        body {
+            background-color: #f0f8ff;
+            color: #023e8a;
+            overflow-x: hidden;
+            min-height: 100vh;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        /* ----- FIXED TOP BAR (slideshow + balances) ----- */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 100, 200, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            animation: bgSlide 24s infinite ease-in-out;
+            border-bottom: 3px solid #48cae4;
+            background-size: cover;
+            background-position: center;
+        }
+
+        @keyframes bgSlide {
+            0% { background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?w=600&auto=format'); }
+            25% { background-image: url('https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&auto=format'); }
+            50% { background-image: url('https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&auto=format'); }
+            75% { background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format'); }
+            100% { background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?w=600&auto=format'); }
+        }
+
+        .top-bar-content {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: space-between;
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 8px 18px;
+            border-radius: 50px;
+            box-shadow: 0 2px 8px rgba(0,119,190,0.2);
+        }
+
+        .app-title {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: #023e8a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .app-title i { color: #0096c7; font-size: 1.8rem; }
+
+        .top-balances {
+            display: flex;
+            gap: 20px;
+            background: rgba(255,255,255,0.5);
+            padding: 5px 18px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            font-weight: 600;
+        }
+        .balance-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .balance-item i { font-size: 1.3rem; color: #0077b6; }
+        .balance-value {
+            background: white;
+            padding: 4px 12px;
+            border-radius: 40px;
+            color: #03045e;
+            font-weight: 700;
+            box-shadow: inset 0 1px 3px #caf0f8;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+        }
+        .bell-icon {
+            font-size: 1.7rem;
+            color: #023e8a;
+            background: rgba(255,255,255,0.7);
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .notification-badge {
+            position: absolute;
+            top: -4px; right: -4px;
+            background: #ef233c;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            min-width: 20px; height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+        }
+        .music-icon {
+            font-size: 1.8rem;
+            color: #0077b6;
+            background: rgba(255,255,255,0.7);
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ---------- NOTIFICATION DROPDOWN ---------- */
+        .notification-dropdown {
+            position: absolute;
+            top: 70px; right: 10px;
+            width: 340px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -8px #0077b6;
+            border: 1px solid #90e0ef;
+            display: none;
+            z-index: 1100;
+            overflow: hidden;
+        }
+        .notification-dropdown.active { display: block; }
+        .dropdown-header { padding: 18px; background: #caf0f8; color: #03045e; font-weight: 700; }
+        .dropdown-body { max-height: 360px; overflow-y: auto; }
+        .dropdown-item {
+            padding: 14px; border-bottom: 1px solid #ade8f4; cursor: pointer;
+            transition: 0.2s;
+        }
+        .dropdown-item:hover { background: #e2f0fa; }
+        .dropdown-item.unread { background: #e6f4ff; border-left: 5px solid #0096c7; }
+        .item-title { font-weight: 600; color: #023e8a; margin-bottom: 4px; }
+        .item-message { font-size: 0.85rem; color: #2d6a9f; }
+        .item-time { font-size: 0.7rem; color: #6c757d; margin-top: 6px; }
+        .dropdown-footer { padding: 14px; text-align: center; background: #f8f9ff; }
+        .view-all-link { color: #0077b6; text-decoration: none; font-weight: 600; }
+
+        /* ----- MAIN CONTENT (scrollable, with space for fixed bars) ----- */
+        .main-content {
+            margin-top: 90px;    /* height of top bar + padding */
+            margin-bottom: 75px;  /* height of bottom nav */
+            padding: 16px;
+            overflow-y: auto;
+            background: #f0f8ff;
+            min-height: calc(100vh - 165px);
+        }
+
+        /* Video page card (white background) */
+        .page-card {
+            background: white;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 150, 199, 0.1);
+            border: 1px solid #90e0ef;
+        }
+
+        /* Level status header */
+        .level-header {
+            background: linear-gradient(135deg, #0096c7, #48cae4);
+            border-radius: 30px;
+            padding: 25px;
+            margin-bottom: 25px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        /* Videos grid - 2 columns exactly like the image */
+        .videos-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        /* Video card styling */
+        .video-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid #90e0ef;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 8px rgba(0,150,199,0.1);
+        }
+        .video-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,150,199,0.15);
+            border-color: #0096c7;
+        }
+
+        .video-thumbnail {
+            position: relative;
+            width: 100%;
+            height: 140px;
+            background: #000;
+            overflow: hidden;
+        }
+        .video-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .video-card:hover .video-overlay {
+            opacity: 1;
+        }
+
+        .play-btn {
+            width: 45px;
+            height: 45px;
+            background: #0096c7;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+        .play-btn:hover {
+            background: #0077b6;
+            transform: scale(1.1);
+        }
+
+        .video-info {
+            padding: 12px;
+        }
+
+        .video-title {
+            font-weight: 600;
+            color: #023e8a;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .video-subtitle {
+            font-size: 0.7rem;
+            color: #2d6a9f;
+            margin-bottom: 8px;
+        }
+
+        .video-earning {
+            color: #0096c7;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        .video-status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        .status-available {
+            background: #e2f0fa;
+            color: #023e8a;
+        }
+
+        .status-watched {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-limit {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Modal styles */
+        .video-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 900px;
+            position: relative;
+        }
+
+        .modal-video {
+            width: 100%;
+            padding-bottom: 56.25%;
+            position: relative;
+        }
+
+        .modal-video video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+        }
+
+        .timer-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .timer-icon {
+            color: #0096c7;
+        }
+
+        .timer-text {
+            color: white;
+        }
+
+        .timer-progress {
+            width: 150px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .timer-progress-bar {
+            height: 100%;
+            background: #0096c7;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .earning-confirmation {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px 30px;
+            border-radius: 15px;
+            border: 3px solid #0096c7;
+            text-align: center;
+            z-index: 20;
+            display: none;
+        }
+
+        .earning-confirmation i {
+            font-size: 50px;
+            color: #0096c7;
+            margin-bottom: 15px;
+        }
+
+        .earning-confirmation h3 {
+            color: #0096c7;
+            margin-bottom: 10px;
+        }
+
+        .earning-confirmation p {
+            color: white;
+        }
+
+        /* Notification container (for toasts) */
+        .notification-container {
+            position: fixed;
+            top: 90px; /* below top bar */
+            right: 20px;
+            z-index: 9999;
+            max-width: 350px;
+        }
+
+        .notification {
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid #90e0ef;
+            color: #023e8a;
+            transform: translateX(120%);
+            animation: slideIn 0.5s forwards, fadeOut 0.5s forwards 3s;
+        }
+
+        @keyframes slideIn {
+            to { transform: translateX(0); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; }
+        }
+
+        .notification i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        .notification.success i { color: #0096c7; }
+        .notification.error i { color: #ef233c; }
+        .notification.warning i { color: #ffb703; }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 10001;
+        }
+        .dotted-spinner {
+            width: 70px; height: 70px;
+            border: 5px dotted #0096c7;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1.2s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Welcome popup */
+        .welcome-popup {
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background: rgba(0,50,100,0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .welcome-popup.active { display: flex; }
+        .welcome-modal {
+            background: white;
+            border-radius: 40px;
+            width: 90%; max-width: 380px;
+            border: 4px solid #48cae4;
+            text-align: center;
+            padding: 25px 15px;
+        }
+        .welcome-icon { font-size: 4rem; color: #0096c7; }
+        .welcome-title { color: #023e8a; font-weight: 700; }
+        .notification-count { font-size: 3rem; font-weight: 800; color: #0077b6; }
+        .ok-btn {
+            background: #0096c7; border: none; color: white;
+            padding: 14px 40px; border-radius: 60px; font-size: 1.2rem;
+            margin-top: 15px; font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* FIXED BOTTOM NAV */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background: white;
+            box-shadow: 0 -6px 16px rgba(0, 136, 204, 0.1);
+            border-top: 2px solid #90e0ef;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 8px;
+            z-index: 1000;
+        }
+
+        .nav-icon {
+            font-size: 2rem;
+            color: #2d6a9f;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 40px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-icon.active {
+            background: #0096c7;
+            color: white;
+            box-shadow: 0 4px 12px #48cae4;
+        }
+
+        .nav-icon a {
+            color: inherit;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification container -->
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="dotted-spinner"></div>
+        <div class="loading-text" style="margin-top:20px; color:#0096c7;">Loading...</div>
+    </div>
+
+    <!-- Welcome Popup (for notifications) -->
+    <div class="welcome-popup" id="welcomePopup">
+        <div class="welcome-modal">
+            <div class="welcome-icon"><i class="fas fa-envelope-open-text"></i></div>
+            <h2 class="welcome-title">NEW NOTIFICATIONS</h2>
+            <p>You have</p>
+            <div class="notification-count" id="popupNotificationCount">0</div>
+            <p>unread messages</p>
+            <button class="ok-btn" id="closePopupBtn">OK, got it</button>
+        </div>
+    </div>
+
+    <!-- FIXED TOP BAR (slideshow background) -->
+    <header class="top-bar">
+        <div class="top-bar-content">
+            <div class="app-title"><i class="fas fa-water"></i> CLASSIC MAXIMIZE</div>
+            <div class="top-balances">
+                <div class="balance-item"><i class="fas fa-wallet"></i><span class="balance-value" id="accountBalance">0 BWP</span></div>
+                <div class="balance-item"><i class="fas fa-coins"></i><span class="balance-value" id="cumulativeBalance">0 BWP</span></div>
+            </div>
+            <div class="top-actions">
+                <div class="notification-bell" id="notificationBell">
+                    <div class="bell-icon"><i class="fas fa-bell"></i></div>
+                    <div class="notification-badge" id="notificationBadge">0</div>
+                    <!-- Notification Dropdown -->
+                    <div class="notification-dropdown" id="notificationDropdown">
+                        <div class="dropdown-header">🔔 notifications</div>
+                        <div class="dropdown-body" id="notificationDropdownBody">loading...</div>
+                        <div class="dropdown-footer"><a href="notifications.html" class="view-all-link">view all <i class="fas fa-arrow-right"></i></a></div>
+                    </div>
+                </div>
+                <div class="music-icon"><i class="fas fa-music"></i></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT (scrollable) -->
+    <main class="main-content">
+        <div class="page-card">
+            <!-- Top bar with balance and user (avatar inside card) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="display: flex; align-items: center; gap: 10px; color:#023e8a;">
+                    <i class="fas fa-play-circle" style="color: #0096c7;"></i> Available Videos
+                </h2>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="background: #f0f8ff; padding: 8px 15px; border-radius: 30px; border: 1px solid #90e0ef;">
+                        <i class="fas fa-wallet" style="color: #0096c7;"></i>
+                        <span style="font-weight: 600; color: #023e8a;" id="userBalance">0 BWP</span>
+                    </div>
+                    <img src="newhope.png" alt="User" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid #0096c7; object-fit: cover;" id="userImg" onerror="this.src='https://via.placeholder.com/45/0096c7/ffffff?text=U'">
+                </div>
+            </div>
+
+            <!-- Level status card -->
+            <div class="level-header">
+                <div>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 5px;"><i class="fas fa-crown"></i> <span id="levelName">No Level</span></h3>
+                    <p style="opacity: 0.9;" id="levelDescription">Invest to access videos</p>
+                </div>
+                <div style="text-align: right;">
+                    <div><i class="fas fa-coins"></i> <span id="earningRate">0 BWP/video</span></div>
+                    <div><i class="fas fa-clock"></i> 10s per video</div>
+                </div>
+            </div>
+
+            <!-- Section header with counter -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                <h3 style="color: #023e8a;"><i class="fas fa-play-circle" style="color:#0096c7;"></i> <span id="videosTitle">Your Videos</span></h3>
+                <span style="background: #e2f0fa; padding: 5px 15px; border-radius: 30px; font-size: 0.8rem; color: #023e8a;" id="videosWatched">0/10 today</span>
+            </div>
+
+            <!-- Videos grid - 2 columns, 10 videos -->
+            <div class="videos-grid" id="videosGrid"></div>
+        </div>
+    </main>
+
+    <!-- Video Modal -->
+    <div class="video-modal" id="videoModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <div class="modal-video">
+                <video controls id="modalVideoPlayer"></video>
+                <div class="timer-container" id="timerContainer">
+                    <div class="timer-icon"><i class="fas fa-clock"></i></div>
+                    <div class="timer-text">Watch for: <span id="timerCount">10</span>s</div>
+                    <div class="timer-progress">
+                        <div class="timer-progress-bar" id="timerProgressBar"></div>
+                    </div>
+                </div>
+                <div class="earning-confirmation" id="earningConfirmation">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>Earning Credited!</h3>
+                    <p id="earnedAmountText">You have earned 0 BWP</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIXED BOTTOM NAV -->
+    <nav class="bottom-nav">
+        <div class="nav-icon"><a href="dashboard.html"><i class="fas fa-home"></i></a></div>
+        <div class="nav-icon"><a href="account.html"><i class="fas fa-user-circle"></i></a></div>
+        <div class="nav-icon"><a href="dash2.html"><i class="fas fa-th-large"></i></a></div>
+        <div class="nav-icon"><a href="tasks.html"><i class="fas fa-tasks"></i></a></div>
+    </nav>
+
+    <script>
+        // ================= FIREBASE CONFIG =================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIX3aQq3VEBq269Jdrk77CefNttqAR51s",
+            authDomain: "mozambique-newhope.firebaseapp.com",
+            databaseURL: "https://mozambique-newhope-default-rtdb.firebaseio.com",
+            projectId: "mozambique-newhope",
+            storageBucket: "mozambique-newhope.firebasestorage.app",
+            messagingSenderId: "133563964959",
+            appId: "1:133563964959:web:d3f183b721d540140f7f2a",
+            measurementId: "G-FY6CNVX6ZK"
+        };
+
+        // Initialize Firebase (if not already initialized)
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // ================= DATA =================
+        const levelData = {
+            level1: { name: "Level 1", price: 150, dailyReturn: 12, perVideo: 2.4 },
+            level2: { name: "Level 2", price: 300, dailyReturn: 25, perVideo: 5 },
+            level3: { name: "Level 3", price: 450, dailyReturn: 37, perVideo: 7.4 },
+            level4: { name: "Level 4", price: 600, dailyReturn: 50, perVideo: 10 },
+            level5: { name: "Level 5", price: 1000, dailyReturn: 100, perVideo: 20 },
+            level6: { name: "Level 6", price: 1500, dailyReturn: 150, perVideo: 30 },
+            level7: { name: "Level 7", price: 2000, dailyReturn: 250, perVideo: 50 },
+            level9: { name: "Level 8", price: 5000, dailyReturn: 625, perVideo: 125 },
+            level8: { name: "Level 9", price: 10000, dailyReturn: 2000, perVideo: 400 },
+            level10: { name: "Level 10", price: 20000, dailyReturn: 4000, perVideo: 800 }
+        };
+
+        const videoEarningsPerVideo = {
+            level1: 2.4, level2: 5, level3: 7.4, level4: 10, level5: 20,
+            level6: 30, level7: 50, level8: 125, level9: 400, level10: 800
+        };
+
+        let currentUser = null;
+        let userData = {
+            balance: 0,
+            deposited: 0,
+            currentLevel: null,
+            levels: {},
+            watchedVideos: {},
+            lastWatchedDate: null,
+            videosPerDay: 10,       // 10 videos per day
+            earningPerVideo: 0
+        };
+
+        // Video player globals
+        let currentVideoId = null;
+        let watchTimer = null;
+        let secondsWatched = 0;
+        const REQUIRED_WATCH_TIME = 10;
+        let hasEarnedFromCurrentVideo = false;
+
+        // Notification globals
+        let allNotifications = [];
+        let unreadCount = 0;
+        let userId = null;
+
+        // ================= HELPER FUNCTIONS =================
+        function formatAmount(amount) {
+            return (amount || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " BWP";
+        }
+
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notificationContainer');
+            const notif = document.createElement('div');
+            notif.className = `notification ${type}`;
+            let icon = type === 'success' ? '<i class="fas fa-check-circle"></i>' :
+                       type === 'error' ? '<i class="fas fa-exclamation-circle"></i>' :
+                       '<i class="fas fa-exclamation-triangle"></i>';
+            notif.innerHTML = `${icon}${message}`;
+            container.appendChild(notif);
+            setTimeout(() => notif.remove(), 3500);
+        }
+
+        function showLoading(message) {
+            document.querySelector('#loadingOverlay .loading-text').textContent = message;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function determineUserLevel(levelsData) {
+            if (!levelsData) return null;
+            const userLevels = Object.keys(levelsData);
+            if (userLevels.length === 0) return null;
+            const levelOrder = ['level10', 'level9', 'level8', 'level7', 'level6', 'level5', 'level4', 'level3', 'level2', 'level1'];
+            for (const levelId of levelOrder) {
+                if (userLevels.includes(levelId)) return levelId;
+            }
+            return null;
+        }
+
+        function countVideosWatchedToday() {
+            if (!userData.watchedVideos) return 0;
+            const today = new Date().toDateString();
+            return Object.values(userData.watchedVideos).filter(date => date === today).length;
+        }
+
+        function isVideoWatchedToday(videoId) {
+            if (!userData.watchedVideos || !userData.watchedVideos[videoId]) return false;
+            const today = new Date().toDateString();
+            if (userData.lastWatchedDate !== today) {
+                userData.watchedVideos = {};
+                userData.lastWatchedDate = today;
+                return false;
+            }
+            return userData.watchedVideos[videoId] === today;
+        }
+
+        function canWatchMoreVideos() {
+            return countVideosWatchedToday() < userData.videosPerDay;
+        }
+
+        // ================= NOTIFICATION FUNCTIONS =================
+        function formatDate(ts) {
+            const d = new Date(ts);
+            const now = new Date();
+            const diff = now - d;
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff/60000)} min ago`;
+            if (diff < 86400000) return `${Math.floor(diff/3600000)} hr ago`;
+            return d.toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notificationBadge');
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.style.display = 'flex';
+                document.getElementById('popupNotificationCount').textContent = unreadCount;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function renderNotificationDropdown(notifs) {
+            const container = document.getElementById('notificationDropdownBody');
+            if (!notifs || notifs.length === 0) {
+                container.innerHTML = `<div class="dropdown-item">✨ no notifications</div>`;
+                return;
+            }
+            let html = '';
+            notifs.slice(0,5).forEach(n => {
+                html += `<div class="dropdown-item ${n.read ? '' : 'unread'}">
+                    <div class="item-title">${n.title || 'Notification'}</div>
+                    <div class="item-message">${(n.message||'').substring(0,60)}</div>
+                    <div class="item-time">${formatDate(n.timestamp)}</div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        async function loadUserNotifications() {
+            try {
+                userId = currentUser.uid;
+                const readSnap = await database.ref(`userReadAnnouncements/${userId}`).once('value');
+                const readAnnouncements = readSnap.val() || {};
+
+                const annSnap = await database.ref('announcements').once('value');
+                let announcements = [];
+                if (annSnap.exists()) {
+                    annSnap.forEach(child => {
+                        let a = child.val(); a.id = child.key; a.type='announcement';
+                        a.read = readAnnouncements[a.id] ? true : false;
+                        announcements.push(a);
+                    });
+                }
+
+                const notifSnap = await database.ref(`userNotifications/${userId}`).once('value');
+                let userNotifications = [];
+                if (notifSnap.exists()) {
+                    notifSnap.forEach(c => { let n = c.val(); n.id = c.key; n.type='withdrawal'; userNotifications.push(n); });
+                }
+
+                allNotifications = [...announcements, ...userNotifications].sort((a,b)=> (b.timestamp||0)-(a.timestamp||0));
+                unreadCount = allNotifications.filter(n => !n.read).length;
+                updateNotificationBadge();
+                renderNotificationDropdown(allNotifications);
+                if (unreadCount>0) document.getElementById('welcomePopup').classList.add('active');
+            } catch (e) { console.warn(e); }
+        }
+
+        // Mark as read (global)
+        window.markAsRead = async (id, type) => {
+            const notif = allNotifications.find(n => n.id === id);
+            if (!notif || notif.read) return;
+            if (type === 'announcement') {
+                await database.ref(`userReadAnnouncements/${userId}/${id}`).set({ read: true, timestamp: Date.now() });
+            } else {
+                await database.ref(`userNotifications/${userId}/${id}/read`).set(true);
+            }
+            notif.read = true;
+            unreadCount = allNotifications.filter(n => !n.read).length;
+            updateNotificationBadge();
+            renderNotificationDropdown(allNotifications);
+        };
+
+        async function markAllAsRead() {
+            const now = Date.now();
+            const updates = {};
+            allNotifications.forEach(n => {
+                if (!n.read) {
+                    if (n.type === 'announcement') updates[`userReadAnnouncements/${userId}/${n.id}`] = { read: true, timestamp: now };
+                    else updates[`userNotifications/${userId}/${n.id}/read`] = true;
+                    n.read = true;
+                }
+            });
+            await database.ref().update(updates);
+            unreadCount = 0;
+            updateNotificationBadge();
+            renderNotificationDropdown(allNotifications);
+        }
+
+        // ================= VIDEO PAGE FUNCTIONS =================
+        function updateLevelDisplay() {
+            const levelName = document.getElementById('levelName');
+            const levelDescription = document.getElementById('levelDescription');
+            const earningRate = document.getElementById('earningRate');
+            const videosTitle = document.getElementById('videosTitle');
+            const videosWatched = document.getElementById('videosWatched');
+
+            if (userData.currentLevel && levelData[userData.currentLevel]) {
+                const level = levelData[userData.currentLevel];
+                const earningPerVideo = videoEarningsPerVideo[userData.currentLevel];
+                userData.earningPerVideo = earningPerVideo;
+
+                levelName.textContent = level.name;
+                levelDescription.textContent = `Daily earnings: ${formatAmount(level.dailyReturn)}`;
+                earningRate.textContent = formatAmount(earningPerVideo) + '/video';
+                videosTitle.textContent = `${level.name} • Videos`;
+
+                const videosWatchedToday = countVideosWatchedToday();
+                videosWatched.textContent = `${videosWatchedToday}/${userData.videosPerDay} today`;
+
+                if (videosWatchedToday >= userData.videosPerDay) {
+                    showNotification('You have watched all videos for today. Come back tomorrow!', 'warning');
+                }
+            } else {
+                levelName.textContent = 'No Level';
+                levelDescription.textContent = 'Invest to access videos';
+                earningRate.textContent = '0 BWP/video';
+                videosTitle.textContent = 'Videos';
+                videosWatched.textContent = `0/${userData.videosPerDay} today`;
+            }
+        }
+
+        function loadVideosForLevel() {
+            const videosGrid = document.getElementById('videosGrid');
+            if (!userData.currentLevel) {
+                videosGrid.innerHTML = '<p style="color: #2d6a9f; text-align: center; padding: 20px; grid-column: span 2;">Please invest in a level to access videos</p>';
+                return;
+            }
+
+            videosGrid.innerHTML = '';
+            // We need 10 thumbnails; we'll repeat the list or add more placeholders.
+            const thumbnails = [
+                'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+                'https://img.youtube.com/vi/L_jWHffIx5E/hqdefault.jpg',
+                'https://img.youtube.com/vi/CduA0TULnow/hqdefault.jpg',
+                'https://img.youtube.com/vi/9bZkp7q19f0/hqdefault.jpg',
+                'https://img.youtube.com/vi/JGwWNGJdvx8/hqdefault.jpg',
+                'https://img.youtube.com/vi/3JZ_D3ELwOQ/hqdefault.jpg',
+                'https://img.youtube.com/vi/4XuR9R-6kLg/hqdefault.jpg',
+                'https://img.youtube.com/vi/5NV6Rdv1a3I/hqdefault.jpg',
+                'https://img.youtube.com/vi/6_2yXwCJ0-o/hqdefault.jpg',
+                'https://img.youtube.com/vi/7wtfhZwyrcc/hqdefault.jpg'
+            ];
+
+            for (let i = 1; i <= 10; i++) {
+                const videoId = `${userData.currentLevel}_video_${i}`;
+                const isWatched = isVideoWatchedToday(videoId);
+
+                let statusClass = 'status-available';
+                let statusText = '▶ Available';
+                if (isWatched) {
+                    statusClass = 'status-watched';
+                    statusText = '✓ Watched';
+                } else if (!canWatchMoreVideos()) {
+                    statusClass = 'status-limit';
+                    statusText = '⏰ Daily limit';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <div class="video-thumbnail">
+                        <img src="${thumbnails[(i-1) % thumbnails.length]}" alt="Video ${i}">
+                        <div class="video-overlay">
+                            <div class="play-btn" data-video-id="${videoId}" data-video-index="${i}">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">${userData.currentLevel} • Episode ${i}</div>
+                        <div class="video-subtitle">${videoEarningsPerVideo[userData.currentLevel]} BWP • 10s</div>
+                        <div class="video-earning">
+                            <i class="fas fa-coins"></i> ${formatAmount(videoEarningsPerVideo[userData.currentLevel])}
+                        </div>
+                        <div class="video-status-badge ${statusClass}">${statusText}</div>
+                    </div>
+                `;
+                videosGrid.appendChild(card);
+            }
+
+            // Attach play button listeners
+            document.querySelectorAll('.play-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const videoId = this.getAttribute('data-video-id');
+                    const videoIndex = this.getAttribute('data-video-index');
+                    if (isVideoWatchedToday(videoId)) {
+                        showNotification('You have already watched this video today.', 'warning');
+                        return;
+                    }
+                    if (!canWatchMoreVideos()) {
+                        showNotification(`Daily limit reached (${userData.videosPerDay} videos).`, 'warning');
+                        return;
+                    }
+                    playVideo(videoId, videoIndex);
+                });
+            });
+        }
+
+        // ================= VIDEO PLAYER =================
+        function playVideo(videoId, videoIndex) {
+            const modal = document.getElementById('videoModal');
+            const videoPlayer = document.getElementById('modalVideoPlayer');
+            const timerContainer = document.getElementById('timerContainer');
+            const timerCount = document.getElementById('timerCount');
+            const timerProgressBar = document.getElementById('timerProgressBar');
+            const earningConfirmation = document.getElementById('earningConfirmation');
+            const earnedAmountText = document.getElementById('earnedAmountText');
+
+            hasEarnedFromCurrentVideo = false;
+            currentVideoId = videoId;
+            secondsWatched = 0;
+            timerCount.textContent = REQUIRED_WATCH_TIME;
+            timerProgressBar.style.width = '0%';
+            earningConfirmation.style.display = 'none';
+
+            const demoVideos = [
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreet.mp4",
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+            ];
+            videoPlayer.src = demoVideos[(videoIndex - 1) % demoVideos.length];
+
+            modal.style.display = 'flex';
+            timerContainer.style.display = 'flex';
+
+            videoPlayer.play().catch(() => {});
+            startWatchTimer(videoPlayer);
+        }
+
+        function startWatchTimer(videoPlayer) {
+            if (watchTimer) clearInterval(watchTimer);
+            watchTimer = setInterval(() => {
+                if (videoPlayer.paused || videoPlayer.ended) return;
+                secondsWatched++;
+                const timeLeft = REQUIRED_WATCH_TIME - secondsWatched;
+                document.getElementById('timerCount').textContent = timeLeft > 0 ? timeLeft : 0;
+                document.getElementById('timerProgressBar').style.width = Math.min((secondsWatched / REQUIRED_WATCH_TIME) * 100, 100) + '%';
+
+                if (secondsWatched >= REQUIRED_WATCH_TIME && !hasEarnedFromCurrentVideo) {
+                    creditVideoEarnings(currentVideoId);
+                }
+                if (secondsWatched >= REQUIRED_WATCH_TIME) {
+                    document.getElementById('timerCount').textContent = 'Earned!';
+                }
+            }, 1000);
+        }
+
+        function creditVideoEarnings(videoId) {
+            if (hasEarnedFromCurrentVideo) return;
+            hasEarnedFromCurrentVideo = true;
+            if (watchTimer) clearInterval(watchTimer);
+
+            const today = new Date().toDateString();
+            userData.watchedVideos[videoId] = today;
+            userData.lastWatchedDate = today;
+            const earnings = videoEarningsPerVideo[userData.currentLevel];
+            const newBalance = userData.balance + earnings;
+
+            const updates = {};
+            updates[`users/${currentUser.uid}/balance`] = newBalance;
+            updates[`users/${currentUser.uid}/watchedVideos/${videoId}`] = today;
+            updates[`users/${currentUser.uid}/lastWatchedDate`] = today;
+
+            const transactionRef = database.ref('transactions').push();
+            updates[`transactions/${transactionRef.key}`] = {
+                userId: currentUser.uid,
+                type: 'video_earning',
+                level: userData.currentLevel,
+                videoId: videoId,
+                amount: earnings,
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                watchTime: REQUIRED_WATCH_TIME
+            };
+
+            database.ref().update(updates).then(() => {
+                userData.balance = newBalance;
+                document.getElementById('userBalance').textContent = formatAmount(userData.balance);
+                document.getElementById('accountBalance').textContent = formatAmount(userData.balance); // update top bar
+                document.getElementById('earnedAmountText').textContent = `You earned ${formatAmount(earnings)} by watching 10 seconds!`;
+                document.getElementById('earningConfirmation').style.display = 'block';
+
+                setTimeout(() => {
+                    document.getElementById('videoModal').style.display = 'none';
+                    const videoPlayer = document.getElementById('modalVideoPlayer');
+                    videoPlayer.pause();
+                    videoPlayer.src = '';
+                    updateLevelDisplay();
+                    loadVideosForLevel();
+                    showNotification(`🎉 You earned ${formatAmount(earnings)}!`, 'success');
+                }, 3000);
+            }).catch(error => showNotification('Error: ' + error.message, 'error'));
+        }
+
+        // ================= AUTH & INIT =================
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                userId = user.uid;
+                document.getElementById('userImg').src = user.photoURL || 'newhope.png';
+                showLoading('Loading data...');
+
+                // Load user data and set up listener
+                database.ref(`users/${user.uid}`).on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        userData.balance = data.balance || 0;
+                        userData.deposited = data.deposited || 0;
+                        userData.levels = data.levels || {};
+                        userData.watchedVideos = data.watchedVideos || {};
+                        userData.lastWatchedDate = data.lastWatchedDate || null;
+                        userData.currentLevel = determineUserLevel(data.levels);
+
+                        // Update top bar balances
+                        document.getElementById('accountBalance').textContent = formatAmount(userData.balance);
+                        document.getElementById('cumulativeBalance').textContent = formatAmount(userData.deposited);
+                        document.getElementById('userBalance').textContent = formatAmount(userData.balance);
+
+                        updateLevelDisplay();
+                        loadVideosForLevel();
+                        hideLoading();
+                    }
+                });
+
+                // Load notifications
+                loadUserNotifications();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // ================= EVENT LISTENERS =================
+        // Notification bell toggle
+        document.getElementById('notificationBell').addEventListener('click', (e)=>{
+            e.stopPropagation();
+            document.getElementById('notificationDropdown').classList.toggle('active');
+        });
+
+        document.addEventListener('click', (e)=>{
+            const dd = document.getElementById('notificationDropdown');
+            if (!dd.contains(e.target) && !e.target.closest('.notification-bell')) dd.classList.remove('active');
+        });
+
+        document.getElementById('closePopupBtn').addEventListener('click', ()=>{
+            document.getElementById('welcomePopup').classList.remove('active');
+        });
+
+        // Modal close
+        document.getElementById('closeModal').addEventListener('click', function() {
+            document.getElementById('videoModal').style.display = 'none';
+            const videoPlayer = document.getElementById('modalVideoPlayer');
+            videoPlayer.pause();
+            videoPlayer.src = '';
+            if (watchTimer) clearInterval(watchTimer);
+        });
+
+        document.getElementById('videoModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                document.getElementById('videoModal').style.display = 'none';
+                const videoPlayer = document.getElementById('modalVideoPlayer');
+                videoPlayer.pause();
+                videoPlayer.src = '';
+                if (watchTimer) clearInterval(watchTimer);
+            }
+        });
+
+        document.getElementById('modalVideoPlayer').addEventListener('ended', function() {
+            if (!hasEarnedFromCurrentVideo && secondsWatched > 0) {
+                if (secondsWatched >= REQUIRED_WATCH_TIME) {
+                    creditVideoEarnings(currentVideoId);
+                } else {
+                    showNotification(`You watched ${secondsWatched}s. Need ${REQUIRED_WATCH_TIME}s to earn.`, 'warning');
+                }
+            }
+        });
+
+        // Mark all read button (if present)
+        const markAllBtn = document.querySelector('.mark-all-read');
+        if (markAllBtn) markAllBtn.addEventListener('click', markAllAsRead);
+    </script>
+    <script src="js/support-bubble.js"></script>
+</body>
+</html>

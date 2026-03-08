@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>CLASSIC MAXIMIZE • Upgrade Level</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ----- WHITE/BLUE THEME (consistent with SPA) ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        body {
+            background: #f0f8ff;
+            color: #023e8a;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* notification container */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 350px;
+        }
+
+        .notification {
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 10px 20px rgba(0, 119, 190, 0.15);
+            transform: translateX(120%);
+            animation: slideIn 0.5s forwards, fadeOut 0.5s forwards 3s;
+            background: white;
+            border: 1px solid #90e0ef;
+            color: #023e8a;
+        }
+
+        .notification i { margin-right: 10px; font-size: 20px; }
+        .notification.success i { color: #00b4d8; }
+        .notification.error i { color: #ef233c; }
+        .notification.warning i { color: #ffb703; }
+
+        @keyframes slideIn { to { transform: translateX(0); } }
+        @keyframes fadeOut { to { opacity: 0; } }
+
+        /* SUCCESS POPUP (white/blue) */
+        .success-popup-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 50, 100, 0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .success-popup {
+            background: white;
+            border-radius: 30px;
+            padding: 40px 30px 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            border: 3px solid #48cae4;
+            box-shadow: 0 20px 40px rgba(0, 150, 199, 0.2);
+            position: relative;
+            animation: popupAppear 0.6s ease;
+        }
+
+        @keyframes popupAppear {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .success-verified-badge {
+            position: absolute;
+            top: -35px; left: 50%;
+            transform: translateX(-50%);
+            background: #00b4d8;
+            color: white;
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 4px solid white;
+            box-shadow: 0 4px 15px #48cae4;
+        }
+
+        .success-verified-badge i { font-size: 32px; }
+
+        .success-popup-title {
+            font-size: 28px;
+            margin: 15px 0 10px;
+            color: #023e8a;
+            font-weight: 700;
+        }
+
+        .success-popup-subtitle {
+            font-size: 16px;
+            color: #2d6a9f;
+            margin-bottom: 25px;
+        }
+
+        .success-popup-details {
+            background: #f0f8ff;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid #90e0ef;
+            text-align: left;
+        }
+
+        .popup-detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #caf0f8;
+        }
+        .popup-detail-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        .popup-detail-label { color: #2d6a9f; }
+        .popup-detail-value { color: #0077b6; font-weight: 700; }
+
+        .success-popup-ok-btn {
+            background: #0096c7;
+            color: white;
+            border: none;
+            border-radius: 60px;
+            padding: 16px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+        .success-popup-ok-btn:hover { background: #0077b6; }
+
+        /* ERROR POPUP */
+        .error-popup-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 50, 100, 0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .error-popup {
+            background: white;
+            border-radius: 30px;
+            padding: 40px 30px 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            border: 3px solid #ef233c;
+            box-shadow: 0 20px 40px rgba(239, 35, 60, 0.1);
+            position: relative;
+        }
+
+        .error-icon {
+            position: absolute;
+            top: -35px; left: 50%;
+            transform: translateX(-50%);
+            background: #ef233c;
+            color: white;
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 4px solid white;
+        }
+
+        .error-popup-title {
+            font-size: 28px;
+            margin: 15px 0 10px;
+            color: #ef233c;
+            font-weight: 700;
+        }
+
+        .error-popup-message {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #ef233c;
+            color: #2d6a9f;
+        }
+
+        .error-popup-ok-btn {
+            background: #ef233c;
+            color: white;
+            border: none;
+            border-radius: 60px;
+            padding: 16px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* CONFIRMATION POPUP */
+        .popup-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 50, 100, 0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .popup-content {
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            border: 2px solid #48cae4;
+            box-shadow: 0 15px 30px rgba(0,150,199,0.1);
+        }
+
+        .popup-title {
+            font-size: 26px;
+            color: #023e8a;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .popup-details {
+            background: #f0f8ff;
+            border-radius: 16px;
+            padding: 15px;
+            margin: 15px 0;
+            border: 1px solid #90e0ef;
+        }
+
+        .popup-detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #caf0f8;
+        }
+        .popup-detail-row:last-child { border-bottom: none; }
+
+        .popup-detail-value { color: #0077b6; font-weight: 700; }
+
+        .popup-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .popup-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 60px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .popup-btn.confirm {
+            background: #0096c7;
+            color: white;
+        }
+        .popup-btn.cancel {
+            background: #e2f0fa;
+            color: #023e8a;
+        }
+        .popup-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 12px #caf0f8; }
+
+        /* LOADING OVERLAY */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 10001;
+        }
+
+        .dot-spinner {
+            width: 70px; height: 70px;
+            border: 5px dotted #0096c7;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1.2s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: #023e8a;
+            margin-top: 30px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* MAIN CONTAINER (fits inside SPA main-content) */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: transparent;
+            padding: 20px 15px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #023e8a;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        h1 i { color: #0096c7; }
+
+        .user-info {
+            text-align: right;
+            margin-bottom: 15px;
+            color: #2d6a9f;
+            font-size: 14px;
+        }
+
+        .balance-info {
+            background: white;
+            border-radius: 50px;
+            padding: 18px 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px #caf0f8;
+            border: 1px solid #90e0ef;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 16px;
+            color: #023e8a;
+            flex-wrap: wrap;
+        }
+        .balance-amount {
+            font-weight: 700;
+            color: #0096c7;
+            font-size: 24px;
+        }
+
+        .current-level-info {
+            background: white;
+            border-radius: 50px;
+            padding: 18px 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px #caf0f8;
+            border: 1px solid #90e0ef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            font-size: 18px;
+            color: #023e8a;
+            flex-wrap: wrap;
+        }
+        .current-level-name {
+            font-weight: 700;
+            color: #0096c7;
+            font-size: 22px;
+        }
+        .current-level-price {
+            color: #2d6a9f;
+            font-size: 18px;
+        }
+
+        /* LEVELS GRID – CARDS WITHOUT IMAGES */
+        .levels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .level-card {
+            background: white;
+            border-radius: 30px;
+            padding: 25px;
+            border: 1px solid #90e0ef;
+            box-shadow: 0 8px 20px rgba(0,150,199,0.1);
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .level-card:hover {
+            transform: translateY(-5px);
+            border-color: #0096c7;
+            box-shadow: 0 15px 30px rgba(0,150,199,0.15);
+        }
+
+        .level-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, #0096c7, #48cae4);
+        }
+
+        .level-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #e2f0fa;
+            color: #0077b6;
+            padding: 5px 15px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #90e0ef;
+        }
+
+        .level-header {
+            margin-bottom: 15px;
+            padding-right: 70px;
+        }
+
+        .level-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #023e8a;
+            margin-bottom: 5px;
+        }
+
+        .level-price {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0096c7;
+        }
+
+        .level-description {
+            font-size: 14px;
+            color: #2d6a9f;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .level-details {
+            background: #f0f8ff;
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #caf0f8;
+        }
+        .detail-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        .detail-label {
+            color: #2d6a9f;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .detail-label i { color: #0096c7; width: 18px; }
+
+        .detail-value {
+            color: #0077b6;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        /* UPGRADE BUTTON */
+        .upgrade-btn {
+            width: 100%;
+            padding: 16px;
+            background: #0096c7;
+            color: white;
+            border: none;
+            border-radius: 60px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .upgrade-btn:disabled {
+            background: #caf0f8;
+            color: #2d6a9f;
+            cursor: not-allowed;
+        }
+        .upgrade-btn i { font-size: 18px; }
+        .upgrade-btn:hover:not(:disabled) { background: #0077b6; transform: scale(1.02); }
+
+        .button-spinner {
+            display: none;
+            width: 20px; height: 20px;
+            border: 3px dotted white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        /* UPGRADE HISTORY */
+        .upgrade-history {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #90e0ef;
+        }
+
+        .history-title {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #023e8a;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .history-card {
+            background: white;
+            border-radius: 20px;
+            padding: 15px;
+            border: 1px solid #90e0ef;
+            transition: 0.2s;
+        }
+        .history-card:hover { border-color: #0096c7; }
+
+        .history-level {
+            font-weight: 600;
+            color: #023e8a;
+            margin-bottom: 5px;
+        }
+        .history-date {
+            font-size: 12px;
+            color: #2d6a9f;
+            margin-bottom: 8px;
+        }
+        .history-amount {
+            color: #0096c7;
+            font-weight: 600;
+        }
+
+        .no-history {
+            text-align: center;
+            color: #2d6a9f;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        /* responsive */
+        @media (max-width: 600px) {
+            .balance-info, .current-level-info { flex-direction: column; gap: 10px; text-align: center; }
+            .levels-grid { grid-template-columns: 1fr; }
+            .popup-buttons { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification Container -->
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <!-- Success Popup Overlay -->
+    <div class="success-popup-overlay" id="successPopupOverlay">
+        <div class="success-popup">
+            <div class="success-verified-badge"><i class="fas fa-check"></i></div>
+            <h3 class="success-popup-title" id="successPopupTitle">Upgrade Successful!</h3>
+            <p class="success-popup-subtitle" id="successPopupSubtitle">Your level has been upgraded</p>
+            <div class="success-popup-details">
+                <div class="popup-detail-item"><span class="popup-detail-label">Previous:</span><span class="popup-detail-value" id="successPreviousLevel">None</span></div>
+                <div class="popup-detail-item"><span class="popup-detail-label">New Level:</span><span class="popup-detail-value" id="successDetailLevel">Level 1</span></div>
+                <div class="popup-detail-item"><span class="popup-detail-label">Upgrade Cost:</span><span class="popup-detail-value" id="successDetailAmount">150 BWP</span></div>
+                <div class="popup-detail-item"><span class="popup-detail-label">Daily Return:</span><span class="popup-detail-value" id="successDetailDaily">12 BWP</span></div>
+                <div class="popup-detail-item"><span class="popup-detail-label">Monthly Return:</span><span class="popup-detail-value" id="successDetailMonthly">360 BWP</span></div>
+                <div class="popup-detail-item"><span class="popup-detail-label">Yearly Return:</span><span class="popup-detail-value" id="successDetailYearly">4,320 BWP</span></div>
+                <div class="popup-detail-item"><span class="popup-detail-label">Status:</span><span class="popup-detail-value" style="color:#00b4d8;"><i class="fas fa-check-circle"></i> Completed</span></div>
+            </div>
+            <button class="success-popup-ok-btn" id="successPopupOkBtn">OK, Continue</button>
+        </div>
+    </div>
+
+    <!-- Error Popup Overlay -->
+    <div class="error-popup-overlay" id="errorPopupOverlay">
+        <div class="error-popup">
+            <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="error-popup-title" id="errorPopupTitle">Upgrade Failed</h3>
+            <p class="error-popup-message" id="errorPopupMessage">An error occurred. Please try again.</p>
+            <button class="error-popup-ok-btn" id="errorPopupOkBtn">OK, Try Again</button>
+        </div>
+    </div>
+
+    <!-- Confirmation Popup -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-content">
+            <h3 class="popup-title" id="popupTitle">Confirm Upgrade</h3>
+            <div id="popupMessageContainer"></div>
+            <div class="popup-buttons">
+                <button class="popup-btn confirm" id="popupConfirm">Yes, Upgrade</button>
+                <button class="popup-btn cancel" id="popupCancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="dot-spinner"></div>
+        <div class="loading-text" id="loadingText">Processing Upgrade...</div>
+    </div>
+
+    <!-- Main content (fits inside SPA) -->
+    <div class="container">
+        <h1><i class="fas fa-arrow-up"></i> Upgrade Your Level</h1>
+
+        <div class="user-info">
+            <i class="fas fa-user-circle"></i> <span id="userEmail">Loading...</span>
+        </div>
+
+        <div class="balance-info">
+            <span><i class="fas fa-wallet"></i> Available balance:</span>
+            <span class="balance-amount" id="userBalance">0 BWP</span>
+        </div>
+
+        <div class="current-level-info">
+            <i class="fas fa-chart-line"></i> Current Level:
+            <span class="current-level-name" id="currentLevelName">None</span>
+            <span class="current-level-price" id="currentLevelPrice"></span>
+        </div>
+
+        <!-- Upgrade Levels Grid -->
+        <div class="levels-grid" id="upgradeLevelsContainer"></div>
+
+        <!-- Upgrade History -->
+        <div class="upgrade-history">
+            <h3 class="history-title">Upgrade History</h3>
+            <div class="history-grid" id="historyContainer"></div>
+        </div>
+    </div>
+
+    <script src="upgrade.js"></script>
+    <script src="js/support-bubble.js"></script>
+</body>
+</html>

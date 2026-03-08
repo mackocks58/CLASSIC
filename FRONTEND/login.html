@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>CLASSIC MAXIMIZE PAY</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #02121c;  /* dark background like the music example */
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* ========== MOVING BACKGROUND (HERO) ========== */
+        .hero {
+            height: 45vh;          /* slightly less than half to give room */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,15,25,0.95));
+            z-index: 2;
+        }
+
+        .rows {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 15px 0;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            width: max-content;
+        }
+
+        .row img {
+            width: 160px;
+            height: 210px;
+            object-fit: cover;
+            border-radius: 18px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+
+        .row1 { animation: scrollLeft 22s linear infinite; }
+        .row2 { animation: scrollLeft 30s linear infinite; }
+        .row3 { animation: scrollLeft 38s linear infinite; }
+
+        @keyframes scrollLeft {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        .hero-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 3;
+            padding: 0 20px;
+        }
+
+        .hero-text h1 {
+            font-size: 42px;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .hero-text p {
+            max-width: 500px;
+            font-size: 16px;
+            opacity: 0.9;
+            text-shadow: 0 1px 5px black;
+        }
+
+        /* ========== FORM SECTION ========== */
+        .form-section {
+            padding: 30px 20px 20px;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-box {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 14px 18px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            transition: 0.3s ease;
+            gap: 8px;
+        }
+
+        .input-box:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .input-box i {
+            opacity: 0.7;
+            width: 22px;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .country-code {
+            color: white;
+            font-weight: 500;
+            opacity: 0.9;
+            padding-right: 8px;
+            border-right: 1px solid rgba(255,255,255,0.2);
+            font-size: 15px;
+        }
+
+        .input-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: white;
+            font-size: 15px;
+        }
+
+        .input-box input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .phone-hint {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            margin-top: 6px;
+            margin-left: 18px;
+            text-align: left;
+        }
+
+        .error-message {
+            position: absolute;
+            top: -38px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 7px 16px;
+            font-size: 12px;
+            border-radius: 8px;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s ease;
+            white-space: nowrap;
+            border-left: 3px solid #ff4d4d;
+            z-index: 100;
+        }
+
+        .error-message.show {
+            opacity: 1;
+        }
+
+        .links {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0 25px;
+            font-size: 14px;
+        }
+
+        .links a {
+            color: #7fdfff;
+            text-decoration: none;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 50px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #3da2b8, #48c6ef);
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 10px 25px rgba(72,198,239,0.4);
+        }
+
+        .login-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(72,198,239,0.6);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* floating message */
+        .floating-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-size: 14px;
+            z-index: 2000;
+            transition: transform 0.4s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            border-left: 4px solid #ff4d4d;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .floating-message.success {
+            border-left-color: #00d1b2;
+        }
+
+        .floating-message.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 3000;
+        }
+
+        .spinner {
+            width: 70px;
+            height: 70px;
+            border: 5px dotted #48c6ef;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1.2s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: #48c6ef;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        /* responsive */
+        @media (max-width: 600px) {
+            .hero { height: 40vh; }
+            .row img { width: 130px; height: 170px; }
+            .hero-text h1 { font-size: 32px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MOVING BACKGROUND SECTION (like music example) -->
+    <section class="hero">
+        <div class="rows">
+            <!-- row 1 - duplicate images to create seamless loop -->
+            <div class="row row1">
+                <img src="https://picsum.photos/300/400?music1" alt="scenic">
+                <img src="https://picsum.photos/300/400?music2" alt="scenic">
+                <img src="https://picsum.photos/300/400?music3" alt="scenic">
+                <img src="https://picsum.photos/300/400?music4" alt="scenic">
+                <img src="https://picsum.photos/300/400?music1" alt="scenic">
+                <img src="https://picsum.photos/300/400?music2" alt="scenic">
+                <img src="https://picsum.photos/300/400?music3" alt="scenic">
+                <img src="https://picsum.photos/300/400?music4" alt="scenic">
+            </div>
+            <div class="row row2">
+                <img src="https://picsum.photos/300/400?music5" alt="scenic">
+                <img src="https://picsum.photos/300/400?music6" alt="scenic">
+                <img src="https://picsum.photos/300/400?music7" alt="scenic">
+                <img src="https://picsum.photos/300/400?music8" alt="scenic">
+                <img src="https://picsum.photos/300/400?music5" alt="scenic">
+                <img src="https://picsum.photos/300/400?music6" alt="scenic">
+                <img src="https://picsum.photos/300/400?music7" alt="scenic">
+                <img src="https://picsum.photos/300/400?music8" alt="scenic">
+            </div>
+            <div class="row row3">
+                <img src="https://picsum.photos/300/400?music9" alt="scenic">
+                <img src="https://picsum.photos/300/400?music10" alt="scenic">
+                <img src="https://picsum.photos/300/400?music11" alt="scenic">
+                <img src="https://picsum.photos/300/400?music12" alt="scenic">
+                <img src="https://picsum.photos/300/400?music9" alt="scenic">
+                <img src="https://picsum.photos/300/400?music10" alt="scenic">
+                <img src="https://picsum.photos/300/400?music11" alt="scenic">
+                <img src="https://picsum.photos/300/400?music12" alt="scenic">
+            </div>
+        </div>
+        <div class="hero-text">
+            <h1>💰 WELCOME BACK</h1>
+            <p>Classic Maximize Pay secure, fast and cinematic. Log in to continue.</p>
+        </div>
+    </section>
+
+    <!-- FORM SECTION with icons and country code -->
+    <section class="form-section">
+        <!-- Phone input with icon and +267 prefix -->
+        <div class="input-group">
+            <div class="error-message" id="phoneErrorInline">Invalid phone number</div>
+            <div class="input-box">
+                <i class="fas fa-phone"></i>
+                <span class="country-code">+267</span>
+                <input type="text" id="phoneDigits" placeholder="71 234 567" 
+                       inputmode="numeric" maxlength="8"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)">
+            </div>
+            <div class="phone-hint">Enter 8 digits starting with 7</div>
+        </div>
+
+        <!-- Password input with icon -->
+        <div class="input-group">
+            <div class="input-box">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="password" placeholder="Password">
+            </div>
+        </div>
+
+        <div class="links">
+            <a href="#">Forgot password?</a>
+            <a href="index.html">Create account</a>
+        </div>
+
+        <button class="login-btn" id="loginBtn" disabled>Log in now</button>
+
+        <div class="footer">
+            © 2026 CLASSIC. All rights reserved.
+        </div>
+    </section>
+
+    <!-- Floating message & loading overlay -->
+    <div id="floatingMessage" class="floating-message"></div>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Please wait...</div>
+    </div>
+
+    <script src="login.js"></script>
+    <script src="js/support-bubble.js"></script>
+</body>
+</html>

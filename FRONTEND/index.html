@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>💰 CLASSIC MAXIMIZE PAY 💰</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            background: #02121c; /* fallback */
+        }
+
+        /* ========== MOVING BACKGROUND GALLERY ========== */
+        .moving-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .rows {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            gap: 12px;
+            padding: 15px 0;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            width: max-content;
+        }
+
+        .row img {
+            width: 160px;
+            height: 210px;
+            object-fit: cover;
+            border-radius: 18px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+
+        .row1 { animation: scrollLeft 22s linear infinite; }
+        .row2 { animation: scrollLeft 30s linear infinite; }
+        .row3 { animation: scrollLeft 38s linear infinite; }
+        .row4 { animation: scrollLeft 26s linear infinite; }
+
+        @keyframes scrollLeft {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        /* Dark cinematic overlay */
+        body::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.85), rgba(0,40,60,0.95));
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* main container */
+        .form-wrapper {
+            position: relative;
+            width: 90%;
+            max-width: 420px;
+            color: white;
+            z-index: 2;
+            animation: fadeIn 1s ease forwards;
+            margin: 0 auto;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(-50%); }
+        }
+
+        /* top bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        .top-bar i {
+            cursor: pointer;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-box {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 14px 18px;
+            border-radius: 40px;
+            transition: 0.3s ease;
+            gap: 10px;
+        }
+        .input-box:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .input-box i {
+            opacity: 0.7;
+            width: 20px;
+            font-size: 1.1rem;
+            color: white;
+        }
+        .input-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: white;
+            font-size: 14px;
+        }
+        .input-box input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .country-code {
+            color: white;
+            font-weight: 500;
+            opacity: 0.9;
+            padding-right: 6px;
+            border-right: 1px solid rgba(255,255,255,0.2);
+            margin-right: 6px;
+            font-size: 15px;
+        }
+        .phone-input-wrapper {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+        .phone-input-wrapper input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: white;
+            font-size: 14px;
+        }
+
+        .phone-hint {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            margin-top: 6px;
+            margin-left: 18px;
+            text-align: left;
+        }
+
+        .error-message {
+            position: absolute;
+            top: -38px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 7px 16px;
+            font-size: 12px;
+            border-radius: 8px;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s ease;
+            white-space: nowrap;
+            border-left: 3px solid #ff4d4d;
+            z-index: 100;
+        }
+        .error-message.show {
+            opacity: 1;
+        }
+
+        .password-strength {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ff4d4d, #ffaa00, #00d1b2);
+            transition: width 0.3s;
+        }
+
+        .links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        .links a {
+            color: #7fdfff;
+            text-decoration: none;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 50px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            background: linear-gradient(90deg, #3da2b8, #48c6ef);
+            box-shadow: 0 10px 30px rgba(72,198,239,0.4);
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        .register-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(72,198,239,0.6);
+        }
+        .register-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* floating message */
+        .floating-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-size: 14px;
+            z-index: 2000;
+            transition: transform 0.4s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            border-left: 4px solid #ff4d4d;
+            max-width: 90%;
+            text-align: center;
+        }
+        .floating-message.success {
+            border-left-color: #00d1b2;
+        }
+        .floating-message.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 3000;
+        }
+        .spinner {
+            width: 70px;
+            height: 70px;
+            border: 5px dotted #48c6ef;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1.2s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text {
+            color: #48c6ef;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        /* ========== MODAL WITH SMOOTH EFFECT ========== */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            /* smooth transition */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+            display: flex;          /* keep flex for centering */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            width: 500px;
+            max-height: 400px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.95);      /* slight scale for smoothness */
+            transition: transform 0.4s ease;
+        }
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .icon-close {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            font-size: 20px;
+            color: red;
+            background: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 1100;
+        }
+
+        table {
+            width: 95%;
+            margin: 0 auto 10px auto;
+            border-collapse: collapse;
+            font-size: 13px;
+            transition: all 0.4s ease;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+            background: linear-gradient(90deg,#22c55e,#38bdf8);
+        }
+        th {
+            background: #2563eb;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background: #f3f4f6;
+        }
+        tr:hover td {
+            background: linear-gradient(90deg,#22c55e,#38bdf8);
+            color: white;
+            transform: scale(1.02);
+        }
+        .paragraph {
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 10px 15px 15px 15px;
+        }
+        .red {
+            color: red;
+            font-weight: bold;
+        }
+        .roman {
+            font-size: 13px;
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        .roman li {
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MOVING BACKGROUND GALLERY (behind form) -->
+    <div class="moving-bg">
+        <div class="rows">
+            <div class="row row1">
+                <img src="https://picsum.photos/300/400?bg1" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg2" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg3" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg4" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg1" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg2" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg3" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg4" alt="scenic">
+            </div>
+            <div class="row row2">
+                <img src="https://picsum.photos/300/400?bg5" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg6" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg7" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg8" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg5" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg6" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg7" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg8" alt="scenic">
+            </div>
+            <div class="row row3">
+                <img src="https://picsum.photos/300/400?bg9" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg10" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg11" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg12" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg9" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg10" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg11" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg12" alt="scenic">
+            </div>
+            <div class="row row4">
+                <img src="https://picsum.photos/300/400?bg13" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg14" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg15" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg16" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg13" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg14" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg15" alt="scenic">
+                <img src="https://picsum.photos/300/400?bg16" alt="scenic">
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN FORM WRAPPER (centered) -->
+    <div class="form-wrapper">
+        <div class="top-bar">
+            <i class="fas fa-arrow-left"></i>
+            <div><i class="fas fa-globe" style="margin-right: 5px;"></i> Language</div>
+        </div>
+
+        <!-- Phone input -->
+        <div class="input-group">
+            <div class="error-message" id="phoneErrorInline">Invalid phone number (start with 7, 8 digits)</div>
+            <div class="input-box">
+                <i class="fas fa-phone"></i>
+                <span class="country-code">+267</span>
+                <input type="text" id="phoneDigits" placeholder="71 234 567" 
+                       inputmode="numeric" maxlength="8"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)">
+            </div>
+            <div class="phone-hint">Enter 8 digits starting with 7</div>
+        </div>
+
+        <!-- Password input -->
+        <div class="input-group">
+            <div class="input-box">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="password" placeholder="Password (min 6 chars)">
+            </div>
+            <div class="password-strength">
+                <div class="strength-bar" id="strengthBar"></div>
+            </div>
+        </div>
+
+        <!-- Confirm password -->
+        <div class="input-group">
+            <div class="error-message" id="passwordErrorInline">Passwords do not match</div>
+            <div class="input-box">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="confirmPassword" placeholder="Confirm password">
+            </div>
+        </div>
+
+        <!-- Referral code -->
+        <div class="input-group">
+            <div class="input-box">
+                <i class="fas fa-envelope-open-text"></i>
+                <input type="text" id="referralCode" placeholder="Referral code (optional)">
+            </div>
+        </div>
+
+        <div class="links">
+            <a href="login.html">Log in now</a>
+            <a href="#">Online Service</a>
+        </div>
+
+        <button class="register-btn" id="signupBtn" disabled>Register now</button>
+
+        <div class="footer">
+            © 2026 CLASSIC. All rights reserved.
+        </div>
+    </div>
+
+    <!-- POPUP MODAL (hidden initially, appears after 3 seconds) -->
+    <div class="modal" id="modal">
+        <div class="modal-content" id="popupContent">
+            <h3 style="text-align:center; margin-bottom:10px;">Commission Levels</h3>
+            <table><tr><th>Level</th><th>Commission (%)</th></tr><tr><td>L1</td><td>5%</td></tr><tr><td>L2</td><td>7%</td></tr><tr><td>L3</td><td>10%</td></tr></table>
+            <div class="paragraph">The <span class="red">Commission system</span> rewards users for their <span class="red">referrals</span> and network. The Commission system rewards users for their referrals and network growth. Users earn commission for each participant they refer who completes tasks and upgrades levels. Tiered structure incentivizes engagement and network expansion. Proper referral use leads to passive income. Each commission is tracked in the dashboard. Users are encouraged to invite new members, monitor activity, and analyze trends. Following best practices enhances overall profitability. Detailed reports maintain transparency. </div>
+            <ol class="roman" type="I"><li>Refer active participants.</li><li>Monitor referral performance.</li><li>Understand commission tiers.</li><li>Analyze cumulative earnings.</li><li>Maintain active network growth.</li><li>Maximize passive income through referrals.</li></ol>
+            <div class="icon-close" onclick="closeModal()">×</div>
+            <h3 style="text-align:center; margin-bottom:10px;">Primary Income Levels</h3>
+            <table> <tr><th>Level</th><th>Tasks</th><th>Daily ($)</th><th>Monthly ($)</th><th>Yearly ($)</th></tr>
+            <tr><td>L1</td><td>4</td><td>10</td><td>300</td><td>3,650</td></tr>
+            <tr><td>L2</td><td>6</td><td>15</td><td>450</td><td>5,475</td></tr>
+            <tr><td>L3</td><td>8</td><td>20</td><td>600</td><td>7,300</td></tr>
+            <tr><td>L4</td><td>10</td><td>30</td><td>900</td><td>10,950</td></tr>
+            <tr><td>L5</td><td>12</td><td>40</td><td>1,200</td><td>14,600</td></tr>
+            <tr><td>L6</td><td>14</td><td>55</td><td>1,650</td><td>20,075</td></tr>
+            <tr><td>L7</td><td>16</td><td>70</td><td>2,100</td><td>25,550</td></tr>
+            <tr><td>L8</td><td>18</td><td>90</td><td>2,700</td><td>32,850</td></tr>
+            <tr><td>L9</td><td>20</td><td>120</td><td>3,600</td><td>43,800</td></tr>
+            <tr><td>L10</td><td>25</td><td>150</td><td>4,500</td><td>54,750</td></tr></table>
+            <div class="paragraph">The <span class="red">Primary Income system</span> is structured to reward users progressively. The Primary Income system is structured to reward users progressively. Each level represents a combination of daily tasks and performance metrics. Users can increase earnings by completing tasks consistently, upgrading levels, and maintaining active participation. Additionally, users can get income by watching movies, adding another way to earn daily rewards. The system ensures fairness, transparency, and scalable growth. New users start with lower income but as they advance, potential monthly and yearly returns increase significantly. Commitment and consistency are key factors. Users should check dashboard reports regularly to monitor progress and maximize earning potential. </div>
+            <ol class="roman" type="I"><li>Complete all <span class="red">daily tasks.</span></li><li>Track daily earnings growth.</li><li>Upgrade levels to increase potential.</li><li>Maintain consistent performance.</li><li>Analyze dashboard reports.</li><li>Optimize strategy for maximum profit.</li></ol>
+            
+        </div>
+    </div>
+
+    <!-- Floating message & loading overlay -->
+    <div id="floatingMessage" class="floating-message"></div>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Please wait...</div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="signup.js"></script>
+    <script src="js/support-bubble.js"></script>
+</body>
+</html>
